@@ -12,7 +12,7 @@ from writer import Writer
 display_cs = machine.Pin(5, machine.Pin.OUT)
 spi = SPI(0, baudrate=100000000, polarity=1, phase=1, sck=Pin(2), mosi=Pin(3), miso=Pin(4))
 #spi.init(baudrate=1000000, polarity=1, phase=1)
-lcd = ST75256(256, 128, spi, Pin(1), Pin(0), display_cs, rot=0)
+lcd = ST75256(256, 128, spi, Pin(1), Pin(6), display_cs, rot=0)
 lcd.contrast(0x138)
 
 lcd.fill(1)
