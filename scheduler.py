@@ -28,7 +28,7 @@ class Task(object):
         cls.id_count += 1
         return cls.id_count
     
-    def __init__(self, func, name, condition = Condition(), task_id = None, args = [], kwargs = {}):
+    def __init__(self, func, name, condition = Condition(), task_id = None, args = [], kwargs = {}, need_to_clean = []):
         self.id = Task.new_id()
         if task_id:
             self.id = task_id
@@ -37,6 +37,7 @@ class Task(object):
         self.msgs_senders = []
         self.func = func(self, name, *args, **kwargs)
         self.condition = condition
+        self.need_to_clean = need_to_clean
         
     def set_condition(self, condition):
         self.condition = condition
@@ -69,6 +70,14 @@ class Task(object):
                 return True
         else:
             return False
+        
+    def clean(self):
+        del self.name
+        del self.msgs
+        del self.msgs_senders
+        del self.func
+        del self.condition
+        del self.need_to_clean
 
 
 class Scheluder(object):
@@ -161,6 +170,16 @@ class Scheluder(object):
                                 self.need_to_sort = True
                             except StopIteration:
                                 self.remove_task(self.current)
+                                for m in self.current.need_to_clean:
+                                    try:
+                                        m_name = m.__name__
+                                        exec("del %s" % m.__name__)
+                                        #exec("del %s" % m.__name__.split(".")[-1])
+                                        del sys.modules[m_name]
+                                        gc.collect()
+                                    except Exception as e:
+                                        self.log("task: %s: %s" % (self.current.name, sys.print_exception(e)))
+                                self.current.clean()
                                 self.current = None
                             except TypeError:
                                 self.current = None
