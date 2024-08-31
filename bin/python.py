@@ -9,7 +9,7 @@ from scheduler import Condition, Message
 from common import exists, path_join, isfile, isdir, path_split
 
 class PyShell(Shell):
-    def __init__(self, display_size = (19, 9), cache_size = (-1, 30), history_length = 50, prompt_c = ">>>", scheduler = None, display_id = None, storage_id = None, history_file_path = "/.python_history"):
+    def __init__(self, display_size = (19, 9), cache_size = (-1, 50), history_length = 50, prompt_c = ">>>", scheduler = None, display_id = None, storage_id = None, history_file_path = "/.python_history"):
         self.display_width = display_size[0]
         self.display_height = display_size[1]
         self.display_width_with_prompt = display_size[0] + len(prompt_c)
@@ -105,9 +105,9 @@ class PyShell(Shell):
             if len(self.cache[-1][:self.current_col]) > len(self.prompt_c):
                 self.cache[-1] = self.cache[-1][:self.current_col-1] + self.cache[-1][self.current_col:]
                 self.cursor_move_left()
-        elif c == "SUP":
+        elif c == "BX":
             self.scroll_up()
-        elif c == "SDN":
+        elif c == "BB":
             self.scroll_down()
         elif c == "UP":
             self.history_previous()
@@ -155,7 +155,7 @@ def main(*args, **kwargs):
             if exists(file_path):
                 with open(file_path, "r") as fp:
                     content = fp.read()
-                    s = PyShell(display_size = (18, 9))
+                    s = PyShell(display_size = (39, 18))
                     result = s.exec_script(content, args = kwargs["args"][1:])
                 shell.disable_output = False
                 shell.current_shell = None
@@ -165,7 +165,7 @@ def main(*args, **kwargs):
             else:
                 raise Exception("file[%s] not exists!" % file_path)
         else:
-            s = PyShell(display_size = (18, 9))
+            s = PyShell(display_size = (39, 18))
             shell.current_shell = s
             s.write_line("   Welcome to Python")
             s.write_char("\n")

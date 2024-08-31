@@ -147,7 +147,7 @@ def main(*args, **kwargs):
     shell_id = kwargs["shell_id"]
     display_id = shell.display_id
     shell.disable_output = True
-    width, height = 21, 9
+    width, height = 42, 18
     try:
         if len(kwargs["args"]) > 0:
             file_path = kwargs["args"][0]

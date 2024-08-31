@@ -11,7 +11,7 @@ from scheduler import Condition, Message
 from common import exists, path_join, isfile, isdir
 
 class EditShell(object):
-    def __init__(self, file_path, display_size = (21, 9), cache_size = 8):
+    def __init__(self, file_path, display_size = (42, 18), cache_size = 17):
         self.display_width = display_size[0]
         self.display_height = display_size[1]
         self.offset_col = 0
@@ -28,6 +28,7 @@ class EditShell(object):
         self.total_lines = 0
         self.line_num = 0
         self.display_offset_row = 0
+        self.display_offset_col = 0
         if not exists(self.file_path):
             f = open(self.file_path, "w")
             f.close()
@@ -74,14 +75,18 @@ class EditShell(object):
             self.cursor_move_up()
         elif c == "DN":
             self.cursor_move_down()
-        elif c == "SUP":
+        elif c in ("SUP", "BX"):
             self.page_up()
-        elif c == "SDN":
+        elif c in ("SDN", "BB"):
             self.page_down()
         elif c == "LT":
             self.cursor_move_left()
         elif c == "RT":
             self.cursor_move_right()
+        elif c == "BY":
+            self.page_left()
+        elif c == "BA":
+            self.page_right()
         elif c == "SAVE":
             fp = open(self.file_path, "w")
             for line in self.cache:
@@ -132,7 +137,7 @@ class EditShell(object):
             frame.append(line[self.offset_col: self.offset_col + self.display_width])
         for i in range(self.cache_size - len(frame)):
             frame.append("")
-        frame.append("{progress: <14}{status: >7}".format(progress = "%s/%s/%s" % (self.cursor_col + self.offset_col, self.cursor_row + 1, len(self.cache)), status = self.status))
+        frame.append("{progress: <35}{status: >7}".format(progress = "%s/%s/%s" % (self.cursor_col + self.offset_col, self.cursor_row + 1, len(self.cache)), status = self.status))
         return frame
     
     def get_cursor_position(self, c = None):
@@ -215,7 +220,21 @@ class EditShell(object):
                 self.cursor_col = 0
                 self.offset_col = 0
         if self.cursor_row > self.display_offset_row + self.cache_size - 1:
-            self.display_offset_row += 1   
+            self.display_offset_row += 1
+            
+    def page_left(self):
+        if self.offset_col >= self.display_width:
+            self.offset_col -= self.display_width
+            if self.offset_col < 0:
+                self.offset_col = 0
+            self.cache_to_frame()
+    
+    def page_right(self):
+        if len(self.cache[self.cursor_row]) >= self.offset_col + self.display_width:
+            self.offset_col += self.display_width
+            if len(self.cache[self.cursor_row]) < self.cursor_col + self.offset_col:
+                self.cursor_col = len(self.cache[self.cursor_row]) - self.offset_col
+            self.cache_to_frame()
             
     def close(self):
         self.file.close()
@@ -228,7 +247,7 @@ def main(*args, **kwargs):
     shell_id = kwargs["shell_id"]
     display_id = shell.display_id
     shell.disable_output = True
-    width, height = 21, 9
+    width, height = 42, 18
     try:
         if len(kwargs["args"]) > 0:
             file_path = kwargs["args"][0]
