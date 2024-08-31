@@ -1,3 +1,4 @@
+import sys
 import uos
 from math import ceil
 
@@ -6,7 +7,7 @@ from common import exists, path_join, isfile, isdir
 
 
 class Shell(object):
-    def __init__(self, display_size = (20, 8), cache_size = (-1, 30), history_length = 100, prompt_c = ">", scheduler = None, display_id = None, storage_id = None, history_file_path = "/.history", bin_path = "/bin"):
+    def __init__(self, display_size = (20, 8), cache_size = (-1, 50), history_length = 100, prompt_c = ">", scheduler = None, display_id = None, storage_id = None, history_file_path = "/.history", bin_path = "/bin"):
         self.display_width = display_size[0]
         self.display_height = display_size[1]
         self.display_width_with_prompt = display_size[0] + len(prompt_c)
@@ -35,8 +36,8 @@ class Shell(object):
         self.history_file_path = history_file_path
         self.bin_path = bin_path
         self.load_history()
-        from bin import ls, pwd, cd, mkdir, cp, rm, touch, echo, cat, ifconfig, connect, disconnect, reconnect, scan, read, help
-        from bin import top, python, clear, learn, reset, edit, editold, readpages, rename, bricks, tank, badapple, umount, mount
+        #from bin import ls, pwd, cd, mkdir, cp, rm, touch, echo, cat, ifconfig, connect, disconnect, reconnect, scan, read, help
+        #from bin import top, python, clear, learn, reset, edit, editold, readpages, rename, bricks, tank, badapple, umount, mount, date, stats
     
     def load_history(self):
         if exists(self.history_file_path):
@@ -78,7 +79,7 @@ class Shell(object):
         self.history_file.flush()
     
     def help_commands(self):
-        return "ls\npwd\ncd\nmkdir\nrm\ncp\ntouch\necho\ncat\nifconfig\nconnect\ndisconnect\nreconnect\nscan\nread\ntop\npython\nclear\nlearn\nreset\nedit\neditold\nrename\nbricks\ntank\nbadapple\numount\nmount\nhelp"
+        return "ls\npwd\ncd\nmkdir\nrm\ncp\ntouch\necho\ncat\nifconfig\nconnect\ndisconnect\nreconnect\nscan\nread\ntop\npython\nclear\nlearn\nreset\nedit\neditold\nrename\nbricks\ntank\nbadapple\numount\nmount\ndate\nstats\nsound\nhelp"
         
     def get_display_frame(self):
         # return self.cache[-self.display_height:]
@@ -135,7 +136,7 @@ class Shell(object):
                                 self.cursor_row = row
                                 self.cursor_col = self.current_col % self.display_width_with_prompt
                                 if self.cursor_col == 0:
-                                    self.cursor_col = 21
+                                    self.cursor_col = 42
                                 #print("cursor_row: ", row, "cursor_col: ", self.cursor_col)
                             elif ceil(self.current_col / self.display_width_with_prompt) < (i + 1):
                                 if len(frame) >= self.display_height:
@@ -187,54 +188,57 @@ class Shell(object):
         self.current_col = len(self.cache[-1])
     
     def input_char(self, c):
-        if self.session_task_id is not None and self.scheduler.exists_task(self.session_task_id):
-            self.scheduler.add_task(Task(self.send_session_message, c, kwargs = {})) # execute cmd
-        else:
-            if c == "\n":
-                cmd = self.cache[-1][len(self.prompt_c):].strip()
-                if len(cmd) > 0:
-                    if self.session_task_id is not None and self.scheduler.exists_task(self.session_task_id):
-                        self.scheduler.add_task(Task(self.send_session_message, self.cache[-1].strip(), kwargs = {})) # execute cmd
-                    else:
-                        self.history.append(self.cache[-1][len(self.prompt_c):])
-                        self.write_history(self.cache[-1][len(self.prompt_c):])
-                        command = cmd.split(" ")[0].strip()
-                        if command in ("connect", "cat", "scan", "reconnect", "read", "help", "top", "python", "learn", "reset", "edit", "readpages", "editold", "cp", "rm", "bricks", "tank", "badapple"):
-                            self.scheduler.add_task(Task(self.run_coroutine, cmd, kwargs = {})) # execute cmd
-                        else:
-                            self.scheduler.add_task(Task(self.run, cmd, kwargs = {})) # execute cmd
-                else:
-                    self.cache.append(self.prompt_c)
-                    self.cache_to_frame_history()
-                if len(self.history) > self.history_length:
-                    self.history.pop(0)
-                self.history_idx = len(self.history)
-            elif c == "\b":
-                if len(self.cache[-1][:self.current_col]) > len(self.prompt_c):
-                    self.cache[-1] = self.cache[-1][:self.current_col-1] + self.cache[-1][self.current_col:]
-                    self.cursor_move_left()
-            elif c == "SUP":
-                self.scroll_up()
-            elif c == "SDN":
-                self.scroll_down()
-            elif c == "UP":
-                self.history_previous()
-            elif c == "DN":
-                self.history_next()
-            elif c == "LT":
-                self.cursor_move_left()
-            elif c == "RT":
-                self.cursor_move_right()
-            elif c in ("ES", "SAVE"):
-                pass
+        try:
+            if self.session_task_id is not None and self.scheduler.exists_task(self.session_task_id):
+                self.scheduler.add_task(Task(self.send_session_message, c, kwargs = {})) # execute cmd
             else:
-                self.cache[-1] = self.cache[-1][:self.current_col] + c + self.cache[-1][self.current_col:]
-                self.cursor_move_right()
-                
-        if len(self.cache) > self.cache_lines:
-            self.cache.pop(0)
-        self.current_row = len(self.cache)
-        #self.current_col = len(self.cache[-1])
+                if c == "\n":
+                    cmd = self.cache[-1][len(self.prompt_c):].strip()
+                    if len(cmd) > 0:
+                        if self.session_task_id is not None and self.scheduler.exists_task(self.session_task_id):
+                            self.scheduler.add_task(Task(self.send_session_message, self.cache[-1].strip(), kwargs = {})) # execute cmd
+                        else:
+                            self.history.append(self.cache[-1][len(self.prompt_c):])
+                            self.write_history(self.cache[-1][len(self.prompt_c):])
+                            command = cmd.split(" ")[0].strip()
+                            if command in ("connect", "cat", "scan", "reconnect", "read", "help", "top", "python", "learn", "reset", "edit", "readpages", "editold", "cp", "rm", "bricks", "tank", "badapple", "date", "stats", "shutdown", "free", "sound", "tetris"):
+                                self.scheduler.add_task(Task(self.run_coroutine, cmd, kwargs = {})) # execute cmd
+                            else:
+                                self.scheduler.add_task(Task(self.run, cmd, kwargs = {})) # execute cmd
+                    else:
+                        self.cache.append(self.prompt_c)
+                        self.cache_to_frame_history()
+                    if len(self.history) > self.history_length:
+                        self.history.pop(0)
+                    self.history_idx = len(self.history)
+                elif c == "\b":
+                    if len(self.cache[-1][:self.current_col]) > len(self.prompt_c):
+                        self.cache[-1] = self.cache[-1][:self.current_col-1] + self.cache[-1][self.current_col:]
+                        self.cursor_move_left()
+                elif c == "BX":
+                    self.scroll_up()
+                elif c == "BB":
+                    self.scroll_down()
+                elif c == "UP":
+                    self.history_previous()
+                elif c == "DN":
+                    self.history_next()
+                elif c == "LT":
+                    self.cursor_move_left()
+                elif c == "RT":
+                    self.cursor_move_right()
+                elif c in ("ES", "SAVE"):
+                    pass
+                else:
+                    self.cache[-1] = self.cache[-1][:self.current_col] + c + self.cache[-1][self.current_col:]
+                    self.cursor_move_right()
+                    
+            if len(self.cache) > self.cache_lines:
+                self.cache.pop(0)
+            self.current_row = len(self.cache)
+            #self.current_col = len(self.cache[-1])
+        except Exception as e:
+            print(sys.print_exception(e))
             
     def write_line(self, line):
         self.cache.append(line)
@@ -287,15 +291,19 @@ class Shell(object):
         
     def run_coroutine(self, task, cmd):
         #print("run_coroutine: ", task, cmd)
-        import bin
+        #import bin
         args = cmd.split(" ")
         module = args[0].split(".")[0]
         #if "/sd/usr" not in sys.path:
         #    sys.path.insert(0, "/sd/usr")
         #import bin
-        import_str = "from bin import %s" % module
-        exec(import_str)
-        self.session_task_id = self.scheduler.add_task(Task(bin.__dict__[module].main, cmd, kwargs = {"args": args[1:], "shell_id": self.scheduler.shell_id, "shell": self})) # execute cmd
+        if module not in sys.modules:
+            #import_str = "from bin import %s" % module
+            import_str = "import %s; sys.modules['%s'] = %s" % (module, module, module)
+            exec(import_str)
+        #bin.__dict__[]
+        #self.session_task_id = self.scheduler.add_task(Task(bin.__dict__[module].main, cmd, kwargs = {"args": args[1:], "shell_id": self.scheduler.shell_id, "shell": self}, need_to_clean = [bin.__dict__[module]])) # execute cmd
+        self.session_task_id = self.scheduler.add_task(Task(sys.modules[module].main, cmd, kwargs = {"args": args[1:], "shell_id": self.scheduler.shell_id, "shell": self}, need_to_clean = [sys.modules[module]])) # execute cmd
     
     def cursor_move_left(self):
         if self.current_col > len(self.prompt_c):
@@ -308,11 +316,11 @@ class Shell(object):
         #print("current_col: ", self.current_col)
         
     def scroll_up(self):
-        self.scroll_row -= 1
+        self.scroll_row -= 18
         #print("scroll_row:", self.scroll_row)
         
     def scroll_down(self):
-        self.scroll_row += 1
+        self.scroll_row += 18
         if self.scroll_row >= 0:
             self.scroll_row = 0
         #print("scroll_row:", self.scroll_row)
