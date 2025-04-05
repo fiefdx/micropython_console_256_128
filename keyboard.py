@@ -30,7 +30,7 @@ class KeyBoard(object):
             [("UP", "UP", "SUP"), ("DN", "DN", "SDN"), ("LT", "LT", "LT"), ("RT", "RT", "RT"), ("BX", "BX", "light-up"), ("BB", "BB", "light-down"), ("BY", "BY", "volume-down"), ("BA", "BA", "volume-up"), ("", "", ""), ("", "", ""), ("", "", ""), ("", "", "")], # contrast-down, contrast-up
             [("ES", "ES", "ES"), ("q", "Q", "`"), ("w", "W", "~"), ("e", "E", "="), ("r", "R", "_"), ("t", "T", "-"), ("y", "Y", "+"), ("u", "U", "["), ("i", "I", "]"), ("o", "O", "{"), ("p", "P", "}"), ("\b", "\b", "\b")],
             [("CP", "CP", "CP"), ("a", "A", "contrast-up"), ("s", "S", "SAVE"), ("d", "D"), ("f", "F"), ("g", "G"), ("h", "H"), ("j", "J"), ("k", "K"), ("l", "L"), (";", ";", ":"), ("'", "'", '"')],
-            [("SH", "SH", "SH"), ("z", "Z", "contrast-down"), ("x", "X"), ("c", "C"), ("v", "V"), ("b", "B"), ("n", "N"), ("m", "M"), (",", ",", "<"), (".", ".", ">"), ("/", "/", "?"), ("\\", "\\", "|")],
+            [("SH", "SH", "SH"), ("z", "Z", "contrast-down"), ("x", "X"), ("c", "C", "Ctrl-C"), ("v", "V"), ("b", "B"), ("n", "N"), ("m", "M"), (",", ",", "<"), (".", ".", ">"), ("/", "/", "?"), ("\\", "\\", "|")],
             [("1", "1", "!"), ("2", "2", "@"), ("3", "3", "#"), ("4", "4", "$"), ("5", "5", "%"), (" ", " ", " "), ("\n", "\n", "\n"), ("6", "6", "^"), ("7", "7", "&"), ("8", "8", "*"), ("9", "9", "("), ("0", "0", ")")],
         ]
         self.press_buttons = [
@@ -45,7 +45,7 @@ class KeyBoard(object):
         self.mode = "DF" # default
         self.button = ""
         self.continue_press_counter = 0
-        self.continue_press_interval = 16
+        self.continue_press_interval = 15
         self.update_light_level()
         self.scan_rows = 5
         
