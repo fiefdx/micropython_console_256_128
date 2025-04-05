@@ -19,6 +19,10 @@ except:
     print("no multi-threading module support")
 from machine import Pin, SPI, PWM
 
+from basictoken import BASICToken as Token
+from lexer import Lexer
+from program import Program
+
 from ST75256 import ST75256
 import sdcard
 # import font8
@@ -38,12 +42,12 @@ if machine:
 if microcontroller:
     microcontroller.cpu.frequency = 200000000
     print("freq: %s mhz" % (microcontroller.cpu.frequency / 1000000))
-    
+
 
 def monitor(task, name, scheduler = None, display_id = None):
     while True:
         gc.collect()
-        # print(int(100 - (gc.mem_free() * 100 / (264 * 1024))), gc.mem_free())
+        #print(int(100 - (gc.mem_free() * 100 / (264 * 1024))), gc.mem_free())
         #monitor_msg = "CPU%s:%3d%%  RAM:%3d%%" % (scheduler.cpu, int(100 - scheduler.idle), int(100 - (scheduler.mem_free() * 100 / (264 * 1024))))
         #print(monitor_msg)
         #print(len(scheduler.tasks))
@@ -54,6 +58,7 @@ def monitor(task, name, scheduler = None, display_id = None):
 def display(task, name, scheduler = None, display_cs = None, sd_cs = None, spi = None):
     sd_cs.high()
     spi.init(baudrate=50000000, polarity=1, phase=1)
+    #spi.init(baudrate=1000000, polarity=1, phase=1)
     lcd = ST75256(256, 128, spi, Pin(1), Pin(6), display_cs, rot=0)
     contrast = 0x138
     contrast_max = 0x150
@@ -67,6 +72,7 @@ def display(task, name, scheduler = None, display_cs = None, sd_cs = None, spi =
         msg = task.get_message()
         sd_cs.high()
         spi.init(baudrate=50000000, polarity=1, phase=1)
+        #spi.init(baudrate=1000000, polarity=1, phase=1)
         # time.sleep_ms(1)
         refresh = False
         #print(msg.content)
@@ -84,6 +90,7 @@ def display(task, name, scheduler = None, display_cs = None, sd_cs = None, spi =
             lcd.fill(0)
         if "frame" in msg.content:
             #lcd.fill(0)
+            #frame_previous = None
             frame = msg.content["frame"]
             #print("frame:", frame)
             lines = [False for i in range(len(frame))]
@@ -481,6 +488,7 @@ if __name__ == "__main__":
         shell_id = s.add_task(Task(shell, "shell", kwargs = {"scheduler": s, "display_id": display_id, "storage_id": storage_id}))
         s.shell_id = shell_id
         keyboard_id = s.add_task(Task(keyboard_input, "keyboard_input", kwargs = {"scheduler": s, "interval": 10, "shell_id": shell_id, "display_id": display_id}))
+        #display_id = None
         monitor_id = s.add_task(Task(monitor, "monitor", kwargs = {"scheduler": s, "display_id": display_id}))
         #counter_id = s.add_task(Task(counter, "counter", kwargs = {"interval": 10, "display_id": display_id}))
         #backlight_id = s.add_task(Task(display_backlight, "display_backlight", kwargs = {"interval": 500, "display_id": display_id}))
