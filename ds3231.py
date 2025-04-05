@@ -28,21 +28,8 @@ class ds3231(object):
         
     def __init__(self, i2c):
         self.bus = i2c
-
-    def set_time_old(self,new_time):
-        hour = new_time[0] + new_time[1]
-        minute = new_time[3] + new_time[4]
-        second = new_time[6] + new_time[7]
-        week = "0" + str(self.w.index(new_time.split(",",2)[1])+1)
-        year = new_time.split(",",2)[2][2] + new_time.split(",",2)[2][3]
-        month = new_time.split(",",2)[2][5] + new_time.split(",",2)[2][6]
-        day = new_time.split(",",2)[2][8] + new_time.split(",",2)[2][9]
-        now_time = binascii.unhexlify((second + " " + minute + " " + hour + " " + week + " " + day + " " + month + " " + year).replace(' ',''))
-        #print(binascii.unhexlify((second + " " + minute + " " + hour + " " + week + " " + day + " " + month + " " + year).replace(' ','')))
-        #print(self.NowTime)
-        self.bus.writeto_mem(int(self.address),int(self.start_reg),now_time)
         
-    def set_time(self,new_time):
+    def set_time(self, new_time):
         # "2020/01/22 21:03:37 Wed"
         hour = new_time[11] + new_time[12]
         minute = new_time[14] + new_time[15]
@@ -60,6 +47,7 @@ class ds3231(object):
         new_time = None
         try:
             new_time = get_ntp_time()
+            # print(new_time)
         except Exception as e:
             pass
         if new_time: # (2024, 8, 21, 17, 12, 7, 2, 234)
@@ -104,21 +92,6 @@ class ds3231(object):
     def reboot(self):
         reset()
 
-    def set_alarm_time(self,alarm_time):
-        #    init the alarm pin
-        self.alarm_pin = Pin(ALARM_PIN,Pin.IN,Pin.PULL_UP)
-        #    set alarm irq
-        self.alarm_pin.irq(lambda pin: print("alarm1 time is up"), Pin.IRQ_FALLING)
-        #    enable the alarm1 reg
-        self.bus.writeto_mem(int(self.address),int(self.control_reg),b'\x05')
-        #    convert to the BCD format
-        hour = alarm_time[0] + alarm_time[1]
-        minute = alarm_time[3] + alarm_time[4]
-        second = alarm_time[6] + alarm_time[7]
-        date = alarm_time.split(",",2)[2][8] + alarm_time.split(",",2)[2][9]
-        now_time = binascii.unhexlify((second + " " + minute + " " + hour +  " " + date).replace(' ',''))
-        #    write alarm time to alarm1 reg
-        self.bus.writeto_mem(int(self.address),int(self.alarm1_reg),now_time)
 
 if __name__ == '__main__':
     i2c = I2C(1, scl=Pin(27), sda=Pin(26), freq=100000)
@@ -126,4 +99,3 @@ if __name__ == '__main__':
     #rtc.set_time('21:59:00,Friday,2024-08-09')
     #rtc.set_time('2024/08/20 19:19:00 Tue')
     print(rtc.read_time())
-    #rtc.set_alarm_time('13:45:55,Monday,2021-05-24')

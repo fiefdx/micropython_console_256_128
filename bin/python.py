@@ -183,7 +183,6 @@ def main(*args, **kwargs):
                     ])
                     msg = task.get_message()
                     c = msg.content["msg"]
-            #print("password:", password)
             shell.disable_output = False
             shell.current_shell = None
             yield Condition(sleep = 0, wait_msg = False, send_msgs = [
