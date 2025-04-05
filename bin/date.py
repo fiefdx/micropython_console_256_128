@@ -14,10 +14,20 @@ def main(*args, **kwargs):
         i2c = I2C(1, scl=Pin(27), sda=Pin(26), freq=100000)
         ups = ds3231(i2c)
         if len(args) > 0:
-            ups.set_time(" ".join(args))
-            yield Condition(sleep = 0, send_msgs = [
-                Message({"output": ups.read_time()}, receiver = shell_id)
-            ])
+            if args[0] == "-s":
+                if ups.sync_time():
+                    yield Condition(sleep = 0, send_msgs = [
+                        Message({"output": ups.read_time()}, receiver = shell_id)
+                    ])
+                else:
+                    yield Condition(sleep = 0, send_msgs = [
+                        Message({"output": "sync failed"}, receiver = shell_id)
+                    ])
+            else:
+                ups.set_time(" ".join(args))
+                yield Condition(sleep = 0, send_msgs = [
+                    Message({"output": ups.read_time()}, receiver = shell_id)
+                ])
         else:
             yield Condition(sleep = 0, send_msgs = [
                 Message({"output": ups.read_time()}, receiver = shell_id)
