@@ -223,7 +223,7 @@ def main(*args, **kwargs):
             w.tanks.append(Tank(0, 1, 0))
             w.update()
             yield Condition(sleep = frame_interval, wait_msg = False, send_msgs = [
-                Message({"bricks": {"data": w.get_diff_frame(), "width": width, "height": height, "size": size}}, receiver = display_id)
+                Message({"bricks": {"offset_x": 0, "offset_y": 0, "data": w.get_diff_frame(), "width": width, "height": height, "size": size}}, receiver = display_id)
             ])
             c = None
             msg = task.get_message()
@@ -232,7 +232,7 @@ def main(*args, **kwargs):
             while c != "ES":
                 w.update()
                 yield Condition(sleep = frame_interval, wait_msg = False, send_msgs = [
-                    Message({"bricks": {"data": w.get_diff_frame(), "width": width, "height": height, "size": size}}, receiver = display_id)
+                    Message({"bricks": {"offset_x": 0, "offset_y": 0, "data": w.get_diff_frame(), "width": width, "height": height, "size": size}}, receiver = display_id)
                 ])
                 msg = task.get_message()
                 if msg:

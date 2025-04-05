@@ -46,7 +46,7 @@ def main(*args, **kwargs):
     display_id = shell.display_id
     shell.disable_output = True
     shell.enable_cursor = False
-    width, height = 21, 9
+    width, height = 42, 18
     if len(kwargs["args"]) > 2:
         word_list, random_offset, limit = kwargs["args"]
         limit = int(limit)
@@ -103,7 +103,7 @@ def main(*args, **kwargs):
                     else:
                         frame.append(" " * width)
                 #frame[-1] = "%12s  %03d/%03d" % (frame[-1][:12].ljust(12), i + 1, len(words))
-                frame[-1] = "{: <12}  {:0>3}/{:0>3}".format(frame[-1][:12], i + 1, len(words))
+                frame[-1] = "{: <33}  {:0>3}/{:0>3}".format(frame[-1][:33], i + 1, len(words))
                 yield Condition(sleep = 0, wait_msg = True, send_msgs = [
                     Message({"frame": frame}, receiver = display_id)
                 ])
@@ -147,7 +147,7 @@ def main(*args, **kwargs):
                             else:
                                 frame.append(" " * width)
                         #frame[-1] = "%12s  %03d/%03d" % (frame[-1][:12].ljust(12), i + 1, len(words))
-                        frame[-1] = "{: <12}  {:0>3}/{:0>3}".format(frame[-1][:12], i + 1, len(words))
+                        frame[-1] = "{: <33}  {:0>3}/{:0>3}".format(frame[-1][:33], i + 1, len(words))
                         yield Condition(sleep = 0, wait_msg = True, send_msgs = [
                             Message({"frame": frame}, receiver = display_id)
                         ])

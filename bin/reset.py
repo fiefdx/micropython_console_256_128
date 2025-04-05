@@ -15,7 +15,7 @@ def main(*args, **kwargs):
     shell_id = kwargs["shell_id"]
     display_id = shell.display_id
     try:
-        lines = [" "*21 for i in range(50)]
+        lines = [" "*42 for i in range(50)]
         yield Condition(sleep = 0, send_msgs = [
             Message({"clear": True, "output": "\n".join(lines)}, receiver = shell_id)
         ])

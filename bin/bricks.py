@@ -42,7 +42,7 @@ def main(*args, **kwargs):
                     else:
                         data[h].append("o" if w % 2 == 0 else "x")
             yield Condition(sleep = 0, wait_msg = True, send_msgs = [
-                Message({"bricks": {"data": data, "width": width, "height": height, "size": size}}, receiver = display_id)
+                Message({"bricks": {"offset_x": 0, "offset_y": 0, "data": data, "width": width, "height": height, "size": size}}, receiver = display_id)
             ])
             msg = task.get_message()
             c = msg.content["msg"]
@@ -51,7 +51,7 @@ def main(*args, **kwargs):
                     for w in range(width):
                         data[h][w] = "x" if data[h][w] == "o" else "o"
                 yield Condition(sleep = 0, wait_msg = True, send_msgs = [
-                    Message({"bricks": {"data": data, "width": width, "height": height, "size": size}}, receiver = display_id)
+                    Message({"bricks": {"offset_x": 0, "offset_y": 0, "data": data, "width": width, "height": height, "size": size}}, receiver = display_id)
                 ])
                 msg = task.get_message()
                 c = msg.content["msg"]

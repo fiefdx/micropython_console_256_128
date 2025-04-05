@@ -83,7 +83,7 @@ class Shell(object):
         
     def get_display_frame(self):
         # return self.cache[-self.display_height:]
-        return self.cache_to_frame()[:self.display_height]
+        return self.cache_to_frame()[-self.display_height:]
     
     def cache_to_frame_history(self):
         self.frame_history.clear()
@@ -145,14 +145,14 @@ class Shell(object):
                     frame.append(line)
                     row += 1
                     self.cursor_row = row
-                    if self.cursor_row >= self.display_height:
-                        self.cursor_row = self.display_height - 1
         else:
             frame_lines = []
             line = self.cache[-1]
             for i in range(ceil(len(line) / self.display_width_with_prompt)):
                 frame_lines.append(line[i*self.display_width_with_prompt:(i+1)*self.display_width_with_prompt])
             frame = self.history_to_frame(frame_lines, self.scroll_row)
+        if self.cursor_row >= self.display_height:
+            self.cursor_row = self.display_height - 1
         return frame
         
     def get_cursor_position(self, c = None):

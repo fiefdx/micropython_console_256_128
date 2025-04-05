@@ -14,7 +14,7 @@ def main(*args, **kwargs):
     shell = kwargs["shell"]
     shell_id = kwargs["shell_id"]
     shell.enable_cursor = False
-    width, height = 21, 8
+    width, height = 42, 17
     try:
         pages = []
         frame = []

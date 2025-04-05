@@ -23,8 +23,8 @@ def main(*args, **kwargs):
                 gc.collect()
                 frame.append("         %s" % ups.read_time())
                 temp = ups.read_temp()
-                voltage, P = ups.read_power_status()
-                monitor_msg = " CPU%s:%3d%% RAM:%3d%% PM: %5.3fV %3.1fC %3d%%" % (shell.scheduler.cpu, int(100 - shell.scheduler.idle), int(100 - (shell.scheduler.mem_free() * 100 / (264 * 1024))), voltage, temp, P)
+                voltage, P, plugged_in = ups.read_power_status()
+                monitor_msg = " CPU%s:%3d%% RAM:%3d%% PM[%s]: %4.2fV %2dC %3d%%" % (shell.scheduler.cpu, int(100 - shell.scheduler.idle), int(100 - (shell.scheduler.mem_free() * 100 / (264 * 1024))), "C" if plugged_in else "B", voltage, temp, P)
                 frame.append(monitor_msg)
                 for i, t in enumerate(shell.scheduler.tasks):
                     frame.append("%03d %38s"  % (t.id, t.name))
