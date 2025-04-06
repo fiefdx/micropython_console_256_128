@@ -28,8 +28,9 @@ class Base(framebuf.FrameBuffer):
             [0x20,0x01,0x03,0x05,0x07,0x09,0x0b,0x0d,0x10,0x11,
              0x13,0x15,0x17,0x19,0x1b,0x1d,0x1f], # grayscale control
             [0x30,],# extended instructions 1
-            [0xCA,0X00,0X9F,0X20],# display control, cl, duty cycle, frame period
-            [0xF0,0X10],# mono color display
+            # [0xCA,0X00,0X9F,0X20],# display control, cl, duty cycle, frame period
+            [0xCA,0X00,0X9F,0X08],# display control, cl, duty cycle, frame period
+            [0xF0,0X30,0X30,0X30,0X30],# mono color display
             [0x81,0x0a,0x04],# contrast control
             [0x20,0x0B] ]# power control
 
@@ -77,7 +78,7 @@ class Base(framebuf.FrameBuffer):
         else:
             self.write_cmd([0x75,0x04,0x13])
         self.write_cmd([0x5C,])
-        self.write_data(self.buffer)
+        self.write_buf()
 
 
 class ST75256(Base):
@@ -107,4 +108,9 @@ class ST75256(Base):
     def write_data(self, buf):
         self.cs(0)
         self.spi.write(buf)
+        self.cs(1)
+
+    def write_buf(self):
+        self.cs(0)
+        self.spi.write(self.buffer)
         self.cs(1)
