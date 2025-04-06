@@ -40,7 +40,7 @@ if machine:
     machine.freq(240000000)
     print("freq: %s mhz" % (machine.freq() / 1000000))
 if microcontroller:
-    microcontroller.cpu.frequency = 200000000
+    microcontroller.cpu.frequency = 240000000
     print("freq: %s mhz" % (microcontroller.cpu.frequency / 1000000))
 
 
@@ -57,8 +57,8 @@ def monitor(task, name, scheduler = None, display_id = None):
 
 def display(task, name, scheduler = None, display_cs = None, sd_cs = None, spi = None):
     sd_cs.high()
-    spi.init(baudrate=50000000, polarity=1, phase=1)
-    #spi.init(baudrate=1000000, polarity=1, phase=1)
+    # spi.init(baudrate=50000000, polarity=1, phase=1)
+    spi.init(baudrate=62500000, polarity=1, phase=1)
     lcd = ST75256(256, 128, spi, Pin(1), Pin(6), display_cs, rot=0)
     contrast = 0x138
     contrast_max = 0x150
@@ -67,14 +67,17 @@ def display(task, name, scheduler = None, display_cs = None, sd_cs = None, spi =
     frame_previous = None
     clear_line = " " * 42
     cursor_previous = None
+    wri = Writer(lcd, font7)
+    wri.wrap = False
     while True:
         yield Condition(sleep = 0, wait_msg = True)
         msg = task.get_message()
         sd_cs.high()
-        spi.init(baudrate=50000000, polarity=1, phase=1)
+        spi.init(baudrate=62500000, polarity=1, phase=1)
         #spi.init(baudrate=1000000, polarity=1, phase=1)
         # time.sleep_ms(1)
         refresh = False
+        t = ticks_ms()
         #print(msg.content)
         if "contrast" in msg.content:
             if msg.content["contrast"] == "contrast-up":
@@ -89,6 +92,7 @@ def display(task, name, scheduler = None, display_cs = None, sd_cs = None, spi =
         if "clear" in msg.content:
             lcd.fill(0)
         if "frame" in msg.content:
+            #ttt = ticks_ms()
             #lcd.fill(0)
             #frame_previous = None
             frame = msg.content["frame"]
@@ -116,16 +120,21 @@ def display(task, name, scheduler = None, display_cs = None, sd_cs = None, spi =
                         lines[n] = clear_line
             else:
                 lines = frame
-            wri = Writer(lcd, font7)
+            #tttt = ticks_ms()
             x = 1
             for n, l in enumerate(lines):
                 if l:
-                    Writer.set_textpos(lcd, n * 7, x)
-                    wri.printstring(clear_line, 0)
-                    Writer.set_textpos(lcd, n * 7, x)
-                    wri.printstring(l, 0)
+                    if l == clear_line:
+                        Writer.set_textpos(lcd, n * 7, x)
+                        wri.clear_line(42, 0)
+                    else:
+                        Writer.set_textpos(lcd, n * 7, x)
+                        wri.clear_line(42, 0)
+                        Writer.set_textpos(lcd, n * 7, x)
+                        wri.printstring(l, 0)
             refresh = True
             frame_previous = frame
+            #print(">>>", ticks_ms() - ttt, ticks_ms() - tttt)
         if "cursor" in msg.content:
             refresh = True
             x, y, c = msg.content["cursor"]
@@ -478,7 +487,7 @@ if __name__ == "__main__":
         sound_pwm = PWM(Pin(12))
         sd_cs = machine.Pin(9, machine.Pin.OUT)
         display_cs = machine.Pin(5, machine.Pin.OUT)
-        spi = SPI(0, baudrate=1000000, polarity=1, phase=1, sck=Pin(2), mosi=Pin(3), miso=Pin(4))
+        spi = SPI(0, baudrate=62500000, polarity=1, phase=1, sck=Pin(2), mosi=Pin(3), miso=Pin(4))
         s = Scheluder(cpu = 0)
         display_id = s.add_task(Task(display, "display", kwargs = {"scheduler": s, "display_cs": display_cs, "sd_cs": sd_cs, "spi": spi}))
         storage_id = s.add_task(Task(storage, "storage", kwargs = {"scheduler": s, "display_cs": display_cs, "sd_cs": sd_cs, "spi": spi}))
