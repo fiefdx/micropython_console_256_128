@@ -96,12 +96,30 @@ _mvfont = memoryview(_font)
 _mvi = memoryview(_index)
 ifb = lambda l : l[0] | (l[1] << 8)
 
-def get_ch(ch):
+# def get_ch(ch):
+#     oc = ord(ch)
+#     ioff = 2 * (oc - 32 + 1) if oc >= 32 and oc <= 126 else 0
+#     doff = ifb(_mvi[ioff : ])
+#     width = ifb(_mvfont[doff : ])
+
+#     next_offs = doff + 2 + ((width - 1)//8 + 1) * 6
+#     return _mvfont[doff + 2:next_offs], 6, width
+
+def get_char(ch):
     oc = ord(ch)
     ioff = 2 * (oc - 32 + 1) if oc >= 32 and oc <= 126 else 0
-    doff = ifb(_mvi[ioff : ])
-    width = ifb(_mvfont[doff : ])
+    doff = _index[ioff] | (_index[ioff+1] << 8)
+    width = _font[doff] | (_font[doff+1] << 8)
 
     next_offs = doff + 2 + ((width - 1)//8 + 1) * 6
-    return _mvfont[doff + 2:next_offs], 6, width
+    return [_font[doff + 2:next_offs], 6, width]
 
+all_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ`1234567890-=[]\\;',./~!@#$%^&*()_+{}|:\"<>? "
+chars = {}
+#charslist = [get_char(" ") for i in range(256)]
+for c in all_chars:
+    chars[c] = get_char(c)
+    #charslist[ord(c)] = get_char(c)
+
+def get_ch(ch):
+    return chars[ch]
