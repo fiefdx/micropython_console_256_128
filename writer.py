@@ -25,6 +25,8 @@ import framebuf
 from uctypes import bytearray_at, addressof
 from sys import implementation
 
+from common import ticks_ms, ticks_add, ticks_diff, sleep_ms
+
 __version__ = (0, 5, 1)
 
 fast_mode = True  # Does nothing. Kept to avoid breaking code.
@@ -120,6 +122,19 @@ class Writer():
     @property
     def height(self):  # Property for consistency with device
         return self.font.height()
+    
+    def clear_line(self, length, invert=False):
+        self._get_char(" ", True)
+        buf = bytearray(self.glyph)
+        if invert:
+            for i, v in enumerate(buf):
+                buf[i] = 0xFF & ~ v
+        for i in range(length):
+            s = self._getstate()
+            fbc = framebuf.FrameBuffer(buf, self.clip_width, self.char_height, self.map)
+            self.device.blit(fbc, s.text_col, s.text_row)
+            s.text_col += self.char_width
+            self.cpos += 1
 
     def printstring(self, string, invert=False):
         # word wrapping. Assumes words separated by single space.
@@ -142,9 +157,14 @@ class Writer():
             if pos > 0:
                 rstr = string[pos + 1:]
                 string = lstr
-                
-        for char in string:
-            self._printchar(char, invert)
+        self.char_map = {}
+        for p, char in enumerate(string):
+            if char not in self.char_map:
+                self.char_map[char] = [p]
+            else:
+                self.char_map[char].append(p)
+        for char in self.char_map:
+            self._printchars(char, invert)
         if rstr is not None:
             self._printchar('\n')
             self._printline(rstr, invert)  # Recurse
@@ -155,13 +175,14 @@ class Writer():
         sc = self._getstate().text_col  # Start column
         wd = self.screenwidth
         l = 0
+        char_width = 6
         for char in string[:-1]:
-            _, _, char_width = self.font.get_ch(char)
+            # _, _, char_width = self.font.get_ch(char)
             l += char_width
             if oh and l + sc > wd:
                 return True  # All done. Save time.
         char = string[-1]
-        _, _, char_width = self.font.get_ch(char)
+        # _, _, char_width = self.font.get_ch(char)
         if oh and l + sc + char_width > wd:
             l += self._truelen(char)  # Last char might have blank cols on RHS
         else:
@@ -230,9 +251,12 @@ class Writer():
         
     # Method using blitting. Efficient rendering for monochrome displays.
     # Tested on SSD1306. Invert is for black-on-white rendering.
-    def _printchar(self, char, invert=False, recurse=False):
+    def _printchar(self, char, invert=False, recurse=True):
+        #t = ticks_ms()
         s = self._getstate()
+        #tt = ticks_ms()
         self._get_char(char, recurse)
+        #ttt = ticks_ms()
         if self.glyph is None:
             return  # All done
         buf = bytearray(self.glyph)
@@ -240,9 +264,33 @@ class Writer():
             for i, v in enumerate(buf):
                 buf[i] = 0xFF & ~ v
         fbc = framebuf.FrameBuffer(buf, self.clip_width, self.char_height, self.map)
+        #tttt = ticks_ms()
         self.device.blit(fbc, s.text_col, s.text_row)
         s.text_col += self.char_width
         self.cpos += 1
+        #ttttt = ticks_ms()
+        #print("_printchar: ", ttttt - t, ttttt - tttt, tttt - ttt, ttt - tt, tt - t)
+        
+    def _printchars(self, char, invert=False, recurse=True):
+        #t = ticks_ms()
+        s = self._getstate()
+        #tt = ticks_ms()
+        self._get_char(char, recurse)
+        #ttt = ticks_ms()
+        if self.glyph is None:
+            return  # All done
+        buf = bytearray(self.glyph)
+        if invert:
+            for i, v in enumerate(buf):
+                buf[i] = 0xFF & ~ v
+        fbc = framebuf.FrameBuffer(buf, self.clip_width, self.char_height, self.map)
+        #tttt = ticks_ms()
+        for p in self.char_map[char]:
+            self.device.blit(fbc, p * self.char_width + 1, s.text_row)
+            #s.text_col += self.char_width
+        #self.cpos += 1
+        #ttttt = ticks_ms()
+        #print("_printchar: ", ttttt - t, ttttt - tttt, tttt - ttt, ttt - tt, tt - t)
 
     def tabsize(self, value=None):
         if value is not None:
