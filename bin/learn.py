@@ -124,7 +124,7 @@ def main(*args, **kwargs):
                         if i <= 0:
                             i = 0
                         break
-                    elif c in ("DN", "UP", "\n"):
+                    elif c in ("DN", "UP", "BX", "BB", "BA", "\n"):
                         if c == "DN":
                             d += 1
                             if d >= len(defination):
@@ -133,7 +133,15 @@ def main(*args, **kwargs):
                             d -= 1
                             if d <= 0:
                                 d = 0
-                        elif c == "\n":
+                        elif c == "BB":
+                            d += 16
+                            if d >= len(defination):
+                                d = len(defination) - 1
+                        elif c == "BX":
+                            d -= 16
+                            if d <= 0:
+                                d = 0
+                        elif c == "\n" or c == "BA":
                             reveal = not reveal
                         frame = []
                         if reveal:
