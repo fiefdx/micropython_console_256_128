@@ -328,7 +328,7 @@ def cursor(task, name, interval = 500, s = None, display_id = None, storage_id =
 def shell(task, name, scheduler = None, display_id = None, storage_id = None):
     yield Condition(sleep = 1000)
     #s = Shell()
-    s = Shell(display_size = (41, 18), scheduler = scheduler, storage_id = storage_id, display_id = display_id)
+    s = Shell(display_size = (41, 18), cache_size = (-1, 100), scheduler = scheduler, storage_id = storage_id, display_id = display_id)
     s.write_line(" Welcome to TinyShell")
     s.write_char("\n")
     yield Condition(sleep = 0, send_msgs = [Message({"frame": s.get_display_frame()}, receiver = display_id)])
