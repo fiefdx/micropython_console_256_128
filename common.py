@@ -94,6 +94,15 @@ def mkdirs(path):
         uos.mkdir(path)
 
 
+def get_size(size):
+    if size > 1024 * 1024:
+        return "%7.2fM" % (size / 1024.0 / 1024.0, )
+    elif size > 1024:
+        return "%7.2fK" % (size / 1024.0, )
+    else:
+        return "%7.2fB" % size
+
+
 def copyfile(source, target):
     yield source
     with open(source, "rb") as s:
