@@ -204,7 +204,7 @@ class Shell(object):
                             self.history.append(self.cache[-1][len(self.prompt_c):])
                             self.write_history(self.cache[-1][len(self.prompt_c):])
                             command = cmd.split(" ")[0].strip()
-                            if command in ("connect", "cat", "scan", "reconnect", "read", "help", "top", "python", "learn", "reset", "edit", "readpages", "editold", "cp", "rm", "bricks", "tank", "badapple", "date", "stats", "shutdown", "free", "sound", "tetris", "reboot", "basic"):
+                            if command in ("connect", "cat", "scan", "reconnect", "read", "help", "top", "python", "learn", "reset", "edit", "readpages", "editold", "cp", "rm", "bricks", "tank", "badapple", "date", "stats", "shutdown", "free", "sound", "tetris", "reboot", "basic", "ftpd"):
                                 self.scheduler.add_task(Task(self.run_coroutine, cmd, kwargs = {})) # execute cmd
                             else:
                                 self.scheduler.add_task(Task(self.run, cmd, kwargs = {})) # execute cmd
