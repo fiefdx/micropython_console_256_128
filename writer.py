@@ -93,6 +93,7 @@ class Writer():
         self.char_height = 0
         self.char_width = 0
         self.clip_width = 0
+        self.char_map = {}
 
     def _getstate(self):
         return Writer.state[self.devid]
@@ -129,12 +130,37 @@ class Writer():
         if invert:
             for i, v in enumerate(buf):
                 buf[i] = 0xFF & ~ v
+        fbc = framebuf.FrameBuffer(buf, self.clip_width, self.char_height, self.map)
         for i in range(length):
             s = self._getstate()
-            fbc = framebuf.FrameBuffer(buf, self.clip_width, self.char_height, self.map)
             self.device.blit(fbc, s.text_col, s.text_row)
             s.text_col += self.char_width
             self.cpos += 1
+
+    def clear_frame(self, rows, cols, invert=False):
+        height = self.font.height()
+        self._get_char(" ", True)
+        buf = bytearray(self.glyph)
+        if invert:
+            for i, v in enumerate(buf):
+                buf[i] = 0xFF & ~ v
+        fbc = framebuf.FrameBuffer(buf, self.clip_width, self.char_height, self.map)
+        for r in range(rows):
+            for c in range(cols):
+                s = self._getstate()
+                self.device.blit(fbc, c * self.char_width + 1, r * height)
+
+    def printframe(self, rows, invert=False):
+        self.char_map.clear()
+        height = self.font.height()
+        for r, row in enumerate(rows):
+            for p, char in enumerate(row):
+                if char not in self.char_map:
+                    self.char_map[char] = [(r * height, p)]
+                else:
+                    self.char_map[char].append((r * height, p))
+        for char in self.char_map:
+            self._printchars_frame(char, invert)
 
     def printstring(self, string, invert=False):
         # word wrapping. Assumes words separated by single space.
@@ -287,6 +313,27 @@ class Writer():
         #tttt = ticks_ms()
         for p in self.char_map[char]:
             self.device.blit(fbc, p * self.char_width + 1, s.text_row)
+            #s.text_col += self.char_width
+        #self.cpos += 1
+        #ttttt = ticks_ms()
+        #print("_printchar: ", ttttt - t, ttttt - tttt, tttt - ttt, ttt - tt, tt - t)
+
+    def _printchars_frame(self, char, invert=False, recurse=True):
+        #t = ticks_ms()
+        s = self._getstate()
+        #tt = ticks_ms()
+        self._get_char(char, recurse)
+        #ttt = ticks_ms()
+        if self.glyph is None:
+            return  # All done
+        buf = bytearray(self.glyph)
+        if invert:
+            for i, v in enumerate(buf):
+                buf[i] = 0xFF & ~ v
+        fbc = framebuf.FrameBuffer(buf, self.clip_width, self.char_height, self.map)
+        #tttt = ticks_ms()
+        for p in self.char_map[char]:
+            self.device.blit(fbc, p[1] * self.char_width + 1, p[0])
             #s.text_col += self.char_width
         #self.cpos += 1
         #ttttt = ticks_ms()
