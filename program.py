@@ -340,17 +340,20 @@ class Program:
                 msg = task.get_message()
                 if msg:
                     print(msg.content)
-                if msg and msg.content["msg"] == "Ctrl-C":
-                    execute_print("Program terminated\n", end = '\n', terminated = True)
-                    raise StopIteration
-                yield Condition(sleep = 0)
+                    if msg.content["msg"] == "Ctrl-C":
+                        msg.release()
+                        execute_print("Program terminated\n", end = '\n', terminated = True)
+                        raise StopIteration
+                    msg.release()
+                yield Condition.get().load(sleep = 0)
                 
                 flowsignal = self.__execute(self.get_next_line_number(), execute_print)
                 if flowsignal == "_wait":
                     shell.wait_for_input = True
-                    yield Condition(sleep = 0, wait_msg = True)
+                    yield Condition.get().load(sleep = 0, wait_msg = True)
                     msg = task.get_message()
                     self.__parser.__input_value = msg.content["msg"]
+                    msg.release()
                     flowsignal = self.__execute(self.get_next_line_number(), execute_print)
                 self.__parser.last_flowsignal = flowsignal
 
@@ -442,10 +445,13 @@ class Program:
                         index = index + 1
                         while index < len(line_numbers):
                             msg = task.get_message()
-                            if msg and msg.content["msg"] == "Ctrl-C":
-                                execute_print("Program terminated", end = '\n', terminated = True)
-                                raise StopIteration
-                            yield Condition(sleep = 0)
+                            if msg:
+                                if msg.content["msg"] == "Ctrl-C":
+                                    msg.release()
+                                    execute_print("Program terminated", end = '\n', terminated = True)
+                                    raise StopIteration
+                                msg.release()
+                            yield Condition.get().load(sleep = 0)
                             
                             next_line_number = line_numbers[index]
                             temp_tokenlist = self.__program[next_line_number]
