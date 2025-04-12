@@ -52,8 +52,8 @@ def main(*args, **kwargs):
                                     frame.append("")
                             if len(frame) == height:
                                 frame.append("%s/%s" % (pos, file_size))
-                                yield Condition(sleep = 0, wait_msg = True, send_msgs = [
-                                    Message({"output_part": "\n".join(frame)}, receiver = shell_id)
+                                yield Condition.get().load(sleep = 0, wait_msg = True, send_msgs = [
+                                    Message.get().load({"output_part": "\n".join(frame)}, receiver = shell_id)
                                 ])
                                 msg = task.get_message()
                                 if msg.content["msg"] == "DN":
@@ -80,6 +80,7 @@ def main(*args, **kwargs):
                                     break
                                 #print("msg: ", msg.content, pos, pages)
                                 frame = []
+                                msg.release()
                     else:
                         frame.append(line_strip)
                         if line != line_strip:
@@ -89,8 +90,8 @@ def main(*args, **kwargs):
                                 frame.append("")
                         if len(frame) == height:
                             frame.append("%s/%s" % (pos, file_size))
-                            yield Condition(sleep = 0, wait_msg = True, send_msgs = [
-                                Message({"output_part": "\n".join(frame)}, receiver = shell_id)
+                            yield Condition.get().load(sleep = 0, wait_msg = True, send_msgs = [
+                                Message.get().load({"output_part": "\n".join(frame)}, receiver = shell_id)
                             ])
                             msg = task.get_message()
                             if msg.content["msg"] == "DN":
@@ -118,26 +119,27 @@ def main(*args, **kwargs):
                                 
                             #print("msg: ", msg.content, pos, pages)
                             frame = []
+                            msg.release()
                     pos = fp.tell()
                     line = fp.readline()
                     row += 1
-                yield Condition(sleep = 0, send_msgs = [
-                    Message({"output": ""}, receiver = shell_id)
+                yield Condition.get().load(sleep = 0, send_msgs = [
+                    Message.get().load({"output": ""}, receiver = shell_id)
                 ])
                 shell.enable_cursor = True
             else:
-                yield Condition(sleep = 0, send_msgs = [
-                    Message({"output": "%s not file/exists!" % path}, receiver = shell_id)
+                yield Condition.get().load(sleep = 0, send_msgs = [
+                    Message.get().load({"output": "%s not file/exists!" % path}, receiver = shell_id)
                 ])
                 shell.enable_cursor = True
         else:
-            yield Condition(sleep = 0, send_msgs = [
-                Message({"output": result}, receiver = shell_id)
+            yield Condition.get().load(sleep = 0, send_msgs = [
+                Message.get().load({"output": result}, receiver = shell_id)
             ])
             shell.enable_cursor = True
     except Exception as e:
-        yield Condition(sleep = 0, send_msgs = [
-            Message({"output": sys.print_exception(e)}, receiver = shell_id)
+        yield Condition.get().load(sleep = 0, send_msgs = [
+            Message.get().load({"output": sys.print_exception(e)}, receiver = shell_id)
         ])
         shell.enable_cursor = True
 

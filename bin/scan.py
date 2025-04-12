@@ -11,13 +11,13 @@ def main(*args, **kwargs):
     shell_id = kwargs["shell_id"]
     try:
         for ssid in WIFI.scan():
-            yield Condition(sleep = 0, send_msgs = [
-                Message({"output_part": ssid[0].decode("utf-8")}, receiver = shell_id)
+            yield Condition.get().load(sleep = 0, send_msgs = [
+                Message.get().load({"output_part": ssid[0].decode("utf-8")}, receiver = shell_id)
             ])
-        yield Condition(sleep = 0, send_msgs = [
-            Message({"output": ""}, receiver = shell_id)
+        yield Condition.get().load(sleep = 0, send_msgs = [
+            Message.get().load({"output": ""}, receiver = shell_id)
         ])
     except Exception as e:
-        yield Condition(sleep = 0, send_msgs = [
-            Message({"output": sys.print_exception(e)}, receiver = shell_id)
+        yield Condition.get().load(sleep = 0, send_msgs = [
+            Message.get().load({"output": sys.print_exception(e)}, receiver = shell_id)
         ])

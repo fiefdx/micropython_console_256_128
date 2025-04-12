@@ -104,11 +104,12 @@ def main(*args, **kwargs):
                         frame.append(" " * width)
                 #frame[-1] = "%12s  %03d/%03d" % (frame[-1][:12].ljust(12), i + 1, len(words))
                 frame[-1] = "{: <33}  {:0>3}/{:0>3}".format(frame[-1][:33], i + 1, len(words))
-                yield Condition(sleep = 0, wait_msg = True, send_msgs = [
-                    Message({"frame": frame}, receiver = display_id)
+                yield Condition.get().load(sleep = 0, wait_msg = True, send_msgs = [
+                    Message.get().load({"frame": frame}, receiver = display_id)
                 ])
                 msg = task.get_message()
                 c = msg.content["msg"]
+                msg.release()
                 reveal = False
                 while c != "":
                     if c == "ES":
@@ -156,31 +157,32 @@ def main(*args, **kwargs):
                                 frame.append(" " * width)
                         #frame[-1] = "%12s  %03d/%03d" % (frame[-1][:12].ljust(12), i + 1, len(words))
                         frame[-1] = "{: <33}  {:0>3}/{:0>3}".format(frame[-1][:33], i + 1, len(words))
-                        yield Condition(sleep = 0, wait_msg = True, send_msgs = [
-                            Message({"frame": frame}, receiver = display_id)
+                        yield Condition.get().load(sleep = 0, wait_msg = True, send_msgs = [
+                            Message.get().load({"frame": frame}, receiver = display_id)
                         ])
-                    yield Condition(sleep = 0, wait_msg = True)
+                    yield Condition.get().load(sleep = 0, wait_msg = True)
                     msg = task.get_message()
                     c = msg.content["msg"]
+                    msg.release()
 
             #print("password:", password)
             shell.disable_output = False
             shell.current_shell = None
             shell.enable_cursor = True
-            yield Condition(sleep = 0, wait_msg = False, send_msgs = [
-                Message({"output": "quit"}, receiver = shell_id)
+            yield Condition.get().load(sleep = 0, wait_msg = False, send_msgs = [
+                Message.get().load({"output": "quit"}, receiver = shell_id)
             ])
         except Exception as e:
             shell.disable_output = False
             shell.current_shell = None
             shell.enable_cursor = True
-            yield Condition(sleep = 0, send_msgs = [
-                Message({"output": sys.print_exception(e)}, receiver = shell_id)
+            yield Condition.get().load(sleep = 0, send_msgs = [
+                Message.get().load({"output": sys.print_exception(e)}, receiver = shell_id)
             ])
     else:
         shell.disable_output = False
         shell.current_shell = None
         shell.enable_cursor = True
-        yield Condition(sleep = 0, send_msgs = [
-            Message({"output": "invalid parameters"}, receiver = shell_id)
+        yield Condition.get().load(sleep = 0, send_msgs = [
+            Message.get().load({"output": "invalid parameters"}, receiver = shell_id)
         ])

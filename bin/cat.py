@@ -18,22 +18,22 @@ def main(*args, **kwargs):
                     while line:
                         line = line.replace("\r", "")
                         line = line.replace("\n", "")
-                        yield Condition(sleep = 0, send_msgs = [
-                            Message({"output_part": line}, receiver = shell_id)
+                        yield Condition.get().load(sleep = 0, send_msgs = [
+                            Message.get().load({"output_part": line}, receiver = shell_id)
                         ])
                         line = fp.readline()
-                    yield Condition(sleep = 0, send_msgs = [
-                        Message({"output": ""}, receiver = shell_id)
+                    yield Condition.get().load(sleep = 0, send_msgs = [
+                        Message.get().load({"output": ""}, receiver = shell_id)
                     ])
             else:
-                yield Condition(sleep = 0, send_msgs = [
-                    Message({"output": result}, receiver = shell_id)
+                yield Condition.get().load(sleep = 0, send_msgs = [
+                    Message.get().load({"output": result}, receiver = shell_id)
                 ])
         else:
-            yield Condition(sleep = 0, send_msgs = [
-                Message({"output": result}, receiver = shell_id)
+            yield Condition.get().load(sleep = 0, send_msgs = [
+                Message.get().load({"output": result}, receiver = shell_id)
             ])
     except Exception as e:
-        yield Condition(sleep = 0, send_msgs = [
-            Message({"output": sys.print_exception(e)}, receiver = shell_id)
+        yield Condition.get().load(sleep = 0, send_msgs = [
+            Message.get().load({"output": sys.print_exception(e)}, receiver = shell_id)
         ])

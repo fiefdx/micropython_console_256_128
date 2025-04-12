@@ -159,8 +159,8 @@ def main(*args, **kwargs):
                     result = s.exec_script(content, args = kwargs["args"][1:])
                 shell.disable_output = False
                 shell.current_shell = None
-                yield Condition(sleep = 0, wait_msg = False, send_msgs = [
-                    Message({"output": result}, receiver = shell_id)
+                yield Condition.get().load(sleep = 0, wait_msg = False, send_msgs = [
+                    Message.get().load({"output": result}, receiver = shell_id)
                 ])
             else:
                 raise Exception("file[%s] not exists!" % file_path)
@@ -169,28 +169,30 @@ def main(*args, **kwargs):
             shell.current_shell = s
             s.write_line("   Welcome to Python")
             s.write_char("\n")
-            yield Condition(sleep = 0, wait_msg = True, send_msgs = [
-                Message({"frame": s.get_display_frame(), "cursor": s.get_cursor_position(1)}, receiver = shell_id)
+            yield Condition.get().load(sleep = 0, wait_msg = True, send_msgs = [
+                Message.get().load({"frame": s.get_display_frame(), "cursor": s.get_cursor_position(1)}, receiver = shell_id)
             ])
             msg = task.get_message()
             c = msg.content["msg"]
+            msg.release()
             while c != "" and not s.exit:
                 #print("char:", c)
                 s.input_char(c)
                 if not s.exit:
-                    yield Condition(sleep = 0, wait_msg = True, send_msgs = [
-                        Message({"frame": s.get_display_frame(), "cursor": s.get_cursor_position(1)}, receiver = shell_id)
+                    yield Condition.get().load(sleep = 0, wait_msg = True, send_msgs = [
+                        Message.get().load({"frame": s.get_display_frame(), "cursor": s.get_cursor_position(1)}, receiver = shell_id)
                     ])
                     msg = task.get_message()
                     c = msg.content["msg"]
+                    msg.release()
             shell.disable_output = False
             shell.current_shell = None
-            yield Condition(sleep = 0, wait_msg = False, send_msgs = [
-                Message({"output": "quit from python"}, receiver = shell_id)
+            yield Condition.get().load(sleep = 0, wait_msg = False, send_msgs = [
+                Message.get().load({"output": "quit from python"}, receiver = shell_id)
             ])
     except Exception as e:
         shell.disable_output = False
         shell.current_shell = None
-        yield Condition(sleep = 0, send_msgs = [
-            Message({"output": str(e)}, receiver = shell_id)
+        yield Condition.get().load(sleep = 0, send_msgs = [
+            Message.get().load({"output": str(e)}, receiver = shell_id)
         ])

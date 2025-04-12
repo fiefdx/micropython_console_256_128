@@ -16,23 +16,23 @@ def main(*args, **kwargs):
         if len(args) > 0:
             if args[0] == "-s":
                 if ups.sync_time():
-                    yield Condition(sleep = 0, send_msgs = [
-                        Message({"output": ups.read_time()}, receiver = shell_id)
+                    yield Condition.get().load(sleep = 0, send_msgs = [
+                        Message.get().load({"output": ups.read_time()}, receiver = shell_id)
                     ])
                 else:
-                    yield Condition(sleep = 0, send_msgs = [
-                        Message({"output": "sync failed"}, receiver = shell_id)
+                    yield Condition.get().load(sleep = 0, send_msgs = [
+                        Message.get().load({"output": "sync failed"}, receiver = shell_id)
                     ])
             else:
                 ups.set_time(" ".join(args))
-                yield Condition(sleep = 0, send_msgs = [
-                    Message({"output": ups.read_time()}, receiver = shell_id)
+                yield Condition.get().load(sleep = 0, send_msgs = [
+                    Message.get().load({"output": ups.read_time()}, receiver = shell_id)
                 ])
         else:
-            yield Condition(sleep = 0, send_msgs = [
-                Message({"output": ups.read_time()}, receiver = shell_id)
+            yield Condition.get().load(sleep = 0, send_msgs = [
+                Message.get().load({"output": ups.read_time()}, receiver = shell_id)
             ])
     except Exception as e:
-        yield Condition(sleep = 0, send_msgs = [
-            Message({"output": str(sys.print_exception(e))}, receiver = shell_id)
+        yield Condition.get().load(sleep = 0, send_msgs = [
+            Message.get().load({"output": str(sys.print_exception(e))}, receiver = shell_id)
         ])

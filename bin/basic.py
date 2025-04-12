@@ -15,7 +15,7 @@ from common import exists, path_join, isfile, isdir, path_split
 print_original = None
 
 class BasicShell(Shell):
-    def __init__(self, display_size = (19, 9), cache_size = (-1, 54), history_length = 50, prompt_c = ">", scheduler = None, display_id = None, storage_id = None, history_file_path = "/.basic_history", ram = False):
+    def __init__(self, display_size = (19, 9), cache_size = (-1, 50), history_length = 50, prompt_c = ">", scheduler = None, display_id = None, storage_id = None, history_file_path = "/.basic_history", ram = False):
         self.display_width = display_size[0]
         self.display_height = display_size[1]
         self.display_width_with_prompt = display_size[0] + len(prompt_c)
@@ -113,8 +113,9 @@ class BasicShell(Shell):
                             # Execute the program
                             elif tokenlist[0].category == Token.RUN:
                                 self.run_program_id = self.scheduler.add_task(
-                                    Task(self.program.execute,
+                                    Task.get().load(self.program.execute,
                                          "basic-execute",
+                                         condition = Condition.get(),
                                          kwargs = {"execute_print": self.execute_print, "shell": self}
                                     )
                                 )
@@ -204,19 +205,19 @@ class BasicShell(Shell):
         self.current_row = len(self.cache)
         
     def kill_task(self, task, name):
-        yield Condition(sleep = 0, send_msgs = [Message({"msg": "Ctrl-C"}, receiver = self.run_program_id)])
+        yield Condition.get().load(sleep = 0, send_msgs = [Message.get().load({"msg": "Ctrl-C"}, receiver = self.run_program_id)])
         self.run_program_id = None
         
     def kill_program(self):
         if self.run_program_id != None:
             #self.run_program_id = None
-            self.scheduler.add_task(Task(self.kill_task, "kill", kwargs = {}))
+            self.scheduler.add_task(Task.get().load(self.kill_task, "kill", condition = Condition.get(), kwargs = {}))
             
     def send_input(self, task, name, msg = ""):
-        yield Condition(sleep = 0, send_msgs = [Message({"msg": msg}, receiver = self.run_program_id)])
+        yield Condition.get().load(sleep = 0, send_msgs = [Message.get().load({"msg": msg}, receiver = self.run_program_id)])
     
     def send_input_hook(self, line):
-        self.scheduler.add_task(Task(self.send_input, "send_input", kwargs = {"msg": line[self.input_start:]}))
+        self.scheduler.add_task(Task.get().load(self.send_input, "send_input", condition = Condition.get(), kwargs = {"msg": line[self.input_start:]}))
         self.wait_for_input = False
         self.input_start = None
         
@@ -292,6 +293,13 @@ class BasicShell(Shell):
             self.write_char("\n", terminated = terminated)
         self.cache_to_frame_history()
 
+    def release(self):
+        self.history.clear()
+        self.cache.clear()
+        self.frame_history.clear()
+        del self.lexer
+        self.program.delete()
+
 
 def diff_frame(f1, f2):
     if len(f1) != len(f2):
@@ -325,8 +333,8 @@ def main(*args, **kwargs):
                     result = s.exec_script(content, args = kwargs["args"][1:])
                 shell.disable_output = False
                 shell.current_shell = None
-                yield Condition(sleep = 0, wait_msg = False, send_msgs = [
-                    Message({"output": result}, receiver = shell_id)
+                yield Condition.get().load(sleep = 0, wait_msg = False, send_msgs = [
+                    Message.get().load({"output": result}, receiver = shell_id)
                 ])
             else:
                 raise Exception("file[%s] not exists!" % file_path)
@@ -340,12 +348,13 @@ def main(*args, **kwargs):
             s.write_char("\n")
             frame_previous = None
             frame = s.get_display_frame()
-            yield Condition(sleep = 0, wait_msg = True, send_msgs = [
-                Message({"frame": frame, "cursor": s.get_cursor_position(1)}, receiver = shell_id)
+            yield Condition.get().load(sleep = 0, wait_msg = True, send_msgs = [
+                Message.get().load({"frame": frame, "cursor": s.get_cursor_position(1)}, receiver = shell_id)
             ])
             frame_previous = frame
             msg = task.get_message()
             c = msg.content["msg"]
+            msg.release()
             while not s.exit:
                 # print("char:", c)
                 if c != "":
@@ -353,36 +362,38 @@ def main(*args, **kwargs):
                     if not s.exit:
                         frame = s.get_display_frame()
                         if diff_frame(frame, frame_previous):
-                            yield Condition(sleep = 0, wait_msg = False, send_msgs = [
-                                Message({"frame": frame, "cursor": s.get_cursor_position(1)}, receiver = shell_id)
+                            yield Condition.get().load(sleep = 0, wait_msg = False, send_msgs = [
+                                Message.get().load({"frame": frame, "cursor": s.get_cursor_position(1)}, receiver = shell_id)
                             ])
                             frame_previous = frame
                         else:
-                            yield Condition(sleep = 0, wait_msg = False)
+                            yield Condition.get().load(sleep = 0, wait_msg = False)
                     c = ""
                 if not s.exit:
                     frame = s.get_display_frame()
                     if diff_frame(frame, frame_previous):
-                        yield Condition(sleep = 0, wait_msg = False, send_msgs = [
-                            Message({"frame": frame, "cursor": s.get_cursor_position(None)}, receiver = shell_id)
+                        yield Condition.get().load(sleep = 0, wait_msg = False, send_msgs = [
+                            Message.get().load({"frame": frame, "cursor": s.get_cursor_position(None)}, receiver = shell_id)
                         ])
                         frame_previous = frame
                     else:
-                        yield Condition(sleep = 0, wait_msg = False)
+                        yield Condition.get().load(sleep = 0, wait_msg = False)
                     msg = task.get_message()
                     if msg:
                         c = msg.content["msg"]
+                        msg.release()
             shell.disable_output = False
             shell.current_shell = None
+            s.release()
             print = print_original
-            yield Condition(sleep = 0, wait_msg = False, send_msgs = [
-                Message({"output": "quit from PyBasic"}, receiver = shell_id)
+            yield Condition.get().load(sleep = 0, wait_msg = False, send_msgs = [
+                Message.get().load({"output": "quit from PyBasic"}, receiver = shell_id)
             ])
     except Exception as e:
         print = print_original
         print(e)
         shell.disable_output = False
         shell.current_shell = None
-        yield Condition(sleep = 0, send_msgs = [
-            Message({"output": str(e)}, receiver = shell_id)
+        yield Condition.get().load(sleep = 0, send_msgs = [
+            Message.get().load({"output": str(e)}, receiver = shell_id)
         ])

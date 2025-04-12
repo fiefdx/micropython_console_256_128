@@ -30,21 +30,23 @@ def main(*args, **kwargs):
                     frame.append("%03d %38s"  % (t.id, t.name))
                 for i in range(0, height - len(frame)):
                     frame.append("")
-                yield Condition(sleep = 1000, wait_msg = False, send_msgs = [
-                    Message({"output_part": "\n".join(frame[:height])}, receiver = shell_id)
+                yield Condition.get().load(sleep = 1000, wait_msg = False, send_msgs = [
+                    Message.get().load({"output_part": "\n".join(frame[:height])}, receiver = shell_id)
                 ])
-                yield Condition(sleep = 1000)
+                yield Condition.get().load(sleep = 1000)
                 msg = task.get_message()
-                if msg and msg.content["msg"] == "ES":
-                    app_exit = True
+                if msg:
+                    if msg.content["msg"] == "ES":
+                        app_exit = True
+                    msg.release()
             except Exception as e:
                 print(e)
-        yield Condition(sleep = 0, send_msgs = [
-            Message({"output": ""}, receiver = shell_id)
+        yield Condition.get().load(sleep = 0, send_msgs = [
+            Message.get().load({"output": ""}, receiver = shell_id)
         ])
         shell.enable_cursor = True
     except Exception as e:
-        yield Condition(sleep = 0, send_msgs = [
-            Message({"output": sys.print_exception(e)}, receiver = shell_id)
+        yield Condition.get().load(sleep = 0, send_msgs = [
+            Message.get().load({"output": sys.print_exception(e)}, receiver = shell_id)
         ])
         shell.enable_cursor = True

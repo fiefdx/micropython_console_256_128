@@ -16,10 +16,10 @@ def main(*args, **kwargs):
         temp = ups.read_temp()
         voltage, P, plugged_in = ups.read_power_status()
         battery_msg = "%5.3fV %3.1fC %3d%% %s" % (voltage, temp, P, "plugged in" if plugged_in else "on battery")
-        yield Condition(sleep = 0, send_msgs = [
-            Message({"output": battery_msg}, receiver = shell_id)
+        yield Condition.get().load(sleep = 0, send_msgs = [
+            Message.get().load({"output": battery_msg}, receiver = shell_id)
         ])
     except Exception as e:
-        yield Condition(sleep = 0, send_msgs = [
-            Message({"output": str(sys.print_exception(e))}, receiver = shell_id)
+        yield Condition.get().load(sleep = 0, send_msgs = [
+            Message.get().load({"output": str(sys.print_exception(e))}, receiver = shell_id)
         ])

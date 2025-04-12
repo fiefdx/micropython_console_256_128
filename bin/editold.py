@@ -156,32 +156,34 @@ def main(*args, **kwargs):
                 shell.current_shell = s
                 line_num = 0
                 s.load_cache(line_num)
-                yield Condition(sleep = 0, wait_msg = True, send_msgs = [
-                    Message({"frame": s.get_display_frame(), "cursor": s.get_cursor_position(1)}, receiver = shell_id)
+                yield Condition.get().load(sleep = 0, wait_msg = True, send_msgs = [
+                    Message.get().load({"frame": s.get_display_frame(), "cursor": s.get_cursor_position(1)}, receiver = shell_id)
                 ])
                 msg = task.get_message()
                 c = msg.content["msg"]
+                msg.release()
                 while not s.exit:
                     s.input_char(c)
                     if s.exit:
                         break
-                    yield Condition(sleep = 0, wait_msg = True, send_msgs = [
-                        Message({"frame": s.get_display_frame(), "cursor": s.get_cursor_position(1)}, receiver = shell_id)
+                    yield Condition.get().load(sleep = 0, wait_msg = True, send_msgs = [
+                        Message.get().load({"frame": s.get_display_frame(), "cursor": s.get_cursor_position(1)}, receiver = shell_id)
                     ])
                     msg = task.get_message()
                     c = msg.content["msg"]
+                    msg.release()
             else:
-                yield Condition(sleep = 0, send_msgs = [
-                    Message({"output": "invalid parameters"}, receiver = shell_id)
+                yield Condition.get().load(sleep = 0, send_msgs = [
+                    Message.get().load({"output": "invalid parameters"}, receiver = shell_id)
                 ])
         else:
-            yield Condition(sleep = 0, send_msgs = [
-                Message({"output": "invalid parameters"}, receiver = shell_id)
+            yield Condition.get().load(sleep = 0, send_msgs = [
+                Message.get().load({"output": "invalid parameters"}, receiver = shell_id)
             ])
         shell.disable_output = False
         shell.current_shell = None
-        yield Condition(sleep = 0, wait_msg = False, send_msgs = [
-            Message({"output": ""}, receiver = shell_id)
+        yield Condition.get().load(sleep = 0, wait_msg = False, send_msgs = [
+            Message.get().load({"output": ""}, receiver = shell_id)
         ])
     except Exception as e:
         shell.disable_output = False
@@ -189,7 +191,7 @@ def main(*args, **kwargs):
         reason = sys.print_exception(e)
         if reason is None:
             reason = "edit failed"
-        yield Condition(sleep = 0, send_msgs = [
-            Message({"output": str(reason)}, receiver = shell_id)
+        yield Condition.get().load(sleep = 0, send_msgs = [
+            Message.get().load({"output": str(reason)}, receiver = shell_id)
         ])
         

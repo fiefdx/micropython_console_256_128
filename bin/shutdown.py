@@ -14,11 +14,11 @@ def main(*args, **kwargs):
         i2c = I2C(1, scl=Pin(27), sda=Pin(26), freq=100000)
         ups = ds3231(i2c)
         ups.power_off()
-        yield Condition(sleep = 0, send_msgs = [
-            Message({"output": "shutdown ..."}, receiver = shell_id)
+        yield Condition.get().load(sleep = 0, send_msgs = [
+            Message.get().load({"output": "shutdown ..."}, receiver = shell_id)
         ])
     except Exception as e:
-        yield Condition(sleep = 0, send_msgs = [
-            Message({"output": str(sys.print_exception(e))}, receiver = shell_id)
+        yield Condition.get().load(sleep = 0, send_msgs = [
+            Message.get().load({"output": str(sys.print_exception(e))}, receiver = shell_id)
         ])
 

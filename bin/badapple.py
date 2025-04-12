@@ -25,11 +25,11 @@ def main(*args, **kwargs):
     try:
         if len(kwargs["args"]) > 0:
             interval = int(kwargs["args"][0])
-            yield Condition(sleep = 0, send_msgs = [
-                Message({"clear": True}, receiver = display_id)
+            yield Condition.get().load(sleep = 0, send_msgs = [
+                Message.get().load({"clear": True}, receiver = display_id)
             ])
-            yield Condition(sleep = 0, send_msgs = [
-                Message({"enabled": False}, receiver = cursor_id)
+            yield Condition.get().load(sleep = 0, send_msgs = [
+                Message.get().load({"enabled": False}, receiver = cursor_id)
             ])
             frames_path = "/sd/tmp/badapple/frames-8864-15fps-compressed-txt/frames.txt"
             fp = open(frames_path, "r")
@@ -38,8 +38,8 @@ def main(*args, **kwargs):
             #f_max = 4381
             f = 1
             frame_data = eval(fp.readline())
-            yield Condition(sleep = interval, wait_msg = False, send_msgs = [
-                Message({"binary": frame_data, "x": 20, "y": 0, "width": 88, "height": 64, "invert": True}, receiver = display_id)
+            yield Condition.get().load(sleep = interval, wait_msg = False, send_msgs = [
+                Message.get().load({"binary": frame_data, "x": 20, "y": 0, "width": 88, "height": 64, "invert": True}, receiver = display_id)
             ])
             c = None
             msg = task.get_message()
@@ -53,34 +53,34 @@ def main(*args, **kwargs):
                     end = True
                 else:
                     frame_data = eval(fp.readline())
-                    yield Condition(sleep = interval, wait_msg = False, send_msgs = [
-                        Message({"binary": frame_data, "x": 20, "y": 0, "width": 88, "height": 64, "invert": True}, receiver = display_id)
+                    yield Condition.get().load(sleep = interval, wait_msg = False, send_msgs = [
+                        Message.get().load({"binary": frame_data, "x": 20, "y": 0, "width": 88, "height": 64, "invert": True}, receiver = display_id)
                     ])
                 msg = task.get_message()
                 if msg:
                     c = msg.content["msg"]
         else:
-            yield Condition(sleep = 0, send_msgs = [
-                Message({"output": "invalid parameters"}, receiver = shell_id)
+            yield Condition.get().load(sleep = 0, send_msgs = [
+                Message.get().load({"output": "invalid parameters"}, receiver = shell_id)
             ])
-        yield Condition(sleep = 0, send_msgs = [
-            Message({"clear": True}, receiver = display_id)
+        yield Condition.get().load(sleep = 0, send_msgs = [
+            Message.get().load({"clear": True}, receiver = display_id)
         ])
-        yield Condition(sleep = 0, send_msgs = [
-            Message({"enabled": True}, receiver = cursor_id)
+        yield Condition.get().load(sleep = 0, send_msgs = [
+            Message.get().load({"enabled": True}, receiver = cursor_id)
         ])
         shell.disable_output = False
         shell.enable_cursor = True
         shell.current_shell = None
-        yield Condition(sleep = 0, wait_msg = False, send_msgs = [
-            Message({"output": ""}, receiver = shell_id)
+        yield Condition.get().load(sleep = 0, wait_msg = False, send_msgs = [
+            Message.get().load({"output": ""}, receiver = shell_id)
         ])
     except Exception as e:
-        yield Condition(sleep = 0, send_msgs = [
-            Message({"clear": True}, receiver = display_id)
+        yield Condition.get().load(sleep = 0, send_msgs = [
+            Message.get().load({"clear": True}, receiver = display_id)
         ])
-        yield Condition(sleep = 0, send_msgs = [
-            Message({"enabled": True}, receiver = cursor_id)
+        yield Condition.get().load(sleep = 0, send_msgs = [
+            Message.get().load({"enabled": True}, receiver = cursor_id)
         ])
         shell.disable_output = False
         shell.enable_cursor = True
@@ -88,6 +88,6 @@ def main(*args, **kwargs):
         reason = sys.print_exception(e)
         if reason is None:
             reason = "render failed"
-        yield Condition(sleep = 0, send_msgs = [
-            Message({"output": str(reason)}, receiver = shell_id)
+        yield Condition.get().load(sleep = 0, send_msgs = [
+            Message.get().load({"output": str(reason)}, receiver = shell_id)
         ])
