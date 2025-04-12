@@ -45,6 +45,7 @@ def _get_id(device):
 class Writer():
 
     state = {}  # Holds a display state for each device
+    chars = {}
 
     @staticmethod
     def set_textpos(device, row=None, col=None):
@@ -126,7 +127,11 @@ class Writer():
     
     def clear_line(self, length, invert=False):
         self._get_char(" ", True)
-        buf = bytearray(self.glyph)
+        if " " not in Writer.chars:
+            buf = bytearray(self.glyph)
+            Writer.chars[" "] = buf
+        else:
+            buf = Writer.chars[" "]
         if invert:
             for i, v in enumerate(buf):
                 buf[i] = 0xFF & ~ v
@@ -136,11 +141,16 @@ class Writer():
             self.device.blit(fbc, s.text_col, s.text_row)
             s.text_col += self.char_width
             self.cpos += 1
+        del fbc
 
     def clear_frame(self, rows, cols, invert=False):
         height = self.font.height()
         self._get_char(" ", True)
-        buf = bytearray(self.glyph)
+        if " " not in Writer.chars:
+            buf = bytearray(self.glyph)
+            Writer.chars[" "] = buf
+        else:
+            buf = Writer.chars[" "]
         if invert:
             for i, v in enumerate(buf):
                 buf[i] = 0xFF & ~ v
@@ -149,6 +159,7 @@ class Writer():
             for c in range(cols):
                 s = self._getstate()
                 self.device.blit(fbc, c * self.char_width + 1, r * height)
+        del fbc
 
     def printframe(self, rows, invert=False):
         self.char_map.clear()
@@ -285,7 +296,11 @@ class Writer():
         #ttt = ticks_ms()
         if self.glyph is None:
             return  # All done
-        buf = bytearray(self.glyph)
+        if char not in Writer.chars:
+            buf = bytearray(self.glyph)
+            Writer.chars[char] = buf
+        else:
+            buf = Writer.chars[char]
         if invert:
             for i, v in enumerate(buf):
                 buf[i] = 0xFF & ~ v
@@ -296,6 +311,7 @@ class Writer():
         self.cpos += 1
         #ttttt = ticks_ms()
         #print("_printchar: ", ttttt - t, ttttt - tttt, tttt - ttt, ttt - tt, tt - t)
+        del fbc
         
     def _printchars(self, char, invert=False, recurse=True):
         #t = ticks_ms()
@@ -305,7 +321,11 @@ class Writer():
         #ttt = ticks_ms()
         if self.glyph is None:
             return  # All done
-        buf = bytearray(self.glyph)
+        if char not in Writer.chars:
+            buf = bytearray(self.glyph)
+            Writer.chars[char] = buf
+        else:
+            buf = Writer.chars[char]
         if invert:
             for i, v in enumerate(buf):
                 buf[i] = 0xFF & ~ v
@@ -317,6 +337,7 @@ class Writer():
         #self.cpos += 1
         #ttttt = ticks_ms()
         #print("_printchar: ", ttttt - t, ttttt - tttt, tttt - ttt, ttt - tt, tt - t)
+        del fbc
 
     def _printchars_frame(self, char, invert=False, recurse=True):
         #t = ticks_ms()
@@ -326,7 +347,11 @@ class Writer():
         #ttt = ticks_ms()
         if self.glyph is None:
             return  # All done
-        buf = bytearray(self.glyph)
+        if char not in Writer.chars:
+            buf = bytearray(self.glyph)
+            Writer.chars[char] = buf
+        else:
+            buf = Writer.chars[char]
         if invert:
             for i, v in enumerate(buf):
                 buf[i] = 0xFF & ~ v
@@ -338,6 +363,7 @@ class Writer():
         #self.cpos += 1
         #ttttt = ticks_ms()
         #print("_printchar: ", ttttt - t, ttttt - tttt, tttt - ttt, ttt - tt, tt - t)
+        del fbc
 
     def tabsize(self, value=None):
         if value is not None:
@@ -389,6 +415,8 @@ class CWriter(Writer):
         self.device.blit(fbc, s.text_col, s.text_row, -1, palette)
         s.text_col += self.char_width
         self.cpos += 1
+        del buf
+        del fbc
 
     def setcolor(self, fgcolor=None, bgcolor=None):
         if fgcolor is None and bgcolor is None:
