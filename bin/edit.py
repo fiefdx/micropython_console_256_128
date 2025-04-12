@@ -6,18 +6,19 @@ import random
 from math import ceil
 from io import StringIO
 
+from listfile import ListFile
 from shell import Shell
 from scheduler import Condition, Message
 from common import exists, path_join, isfile, isdir
 
 class EditShell(object):
-    def __init__(self, file_path, display_size = (42, 18), cache_size = 17):
+    def __init__(self, file_path, display_size = (42, 18), cache_size = 17, ram = True):
         self.display_width = display_size[0]
         self.display_height = display_size[1]
         self.offset_col = 0
         self.offset_row = 0
         self.cache_size = cache_size
-        self.cache = []
+        self.cache = [] if ram else ListFile("/.edit_cache.json", shrink_threshold = 1024000) # []
         self.lines_pos = {}
         self.cursor_color = 1
         self.cursor_row = 0
@@ -251,31 +252,36 @@ def main(*args, **kwargs):
     try:
         if len(kwargs["args"]) > 0:
             file_path = kwargs["args"][0]
-            s = EditShell(file_path)
+            ram = True
+            if len(kwargs["args"]) > 1:
+                ram = int(kwargs["args"][1]) == 1
+            s = EditShell(file_path, ram = ram)
             shell.current_shell = s
-            yield Condition(sleep = 0, wait_msg = True, send_msgs = [
-                Message({"frame": s.get_display_frame(), "cursor": s.get_cursor_position(1)}, receiver = display_id)
+            yield Condition.get().load(sleep = 0, wait_msg = True, send_msgs = [
+                Message.get().load({"frame": s.get_display_frame(), "cursor": s.get_cursor_position(1)}, receiver = display_id)
             ])
             msg = task.get_message()
             c = msg.content["msg"]
+            msg.release()
             while not s.exit:
                 s.input_char(c)
                 if s.exit:
                     s.close()
                     break
-                yield Condition(sleep = 0, wait_msg = True, send_msgs = [
-                    Message({"frame": s.get_display_frame(), "cursor": s.get_cursor_position(1)}, receiver = display_id)
+                yield Condition.get().load(sleep = 0, wait_msg = True, send_msgs = [
+                    Message.get().load({"frame": s.get_display_frame(), "cursor": s.get_cursor_position(1)}, receiver = display_id)
                 ])
                 msg = task.get_message()
                 c = msg.content["msg"]
+                msg.release()
         else:
-            yield Condition(sleep = 0, send_msgs = [
-                Message({"output": "invalid parameters"}, receiver = shell_id)
+            yield Condition.get().load(sleep = 0, send_msgs = [
+                Message.get().load({"output": "invalid parameters"}, receiver = shell_id)
             ])
         shell.disable_output = False
         shell.current_shell = None
-        yield Condition(sleep = 0, wait_msg = False, send_msgs = [
-            Message({"output": ""}, receiver = shell_id)
+        yield Condition.get().load(sleep = 0, wait_msg = False, send_msgs = [
+            Message.get().load({"output": ""}, receiver = shell_id)
         ])
     except Exception as e:
         shell.disable_output = False
@@ -283,6 +289,6 @@ def main(*args, **kwargs):
         reason = sys.print_exception(e)
         if reason is None:
             reason = "edit failed"
-        yield Condition(sleep = 0, send_msgs = [
-            Message({"output": str(reason)}, receiver = shell_id)
+        yield Condition.get().load(sleep = 0, send_msgs = [
+            Message.get().load({"output": str(reason)}, receiver = shell_id)
         ])
