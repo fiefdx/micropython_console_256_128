@@ -94,25 +94,17 @@ def display(task, name, scheduler = None, display_cs = None, sd_cs = None, spi =
         if "frame" in msg.content:
             #ttt = ticks_ms()
             #lcd.fill(0)
-            #frame_previous = None
             frame = msg.content["frame"]
-            #print("frame:", frame)
             lines = [False for i in range(len(frame))]
             if frame_previous:
                 if len(frame) < len(frame_previous):
                     lines = [False for i in range(len(frame_previous))]
-                #print("frame: ", frame)
-                #print("frame_p", frame_previous)
                 for n, l in enumerate(frame):
-                    #if l == "":
-                    #    l = clear_line
                     if n < len(frame_previous):
                         if l != frame_previous[n]:
                             lines[n] = l
                             if l == "":
                                 lines[n] = clear_line
-                        #elif l == clear_line:
-                        #    l = clear_line
                     else:
                         lines[n] = l
                 if len(frame_previous) > len(frame):
@@ -120,21 +112,25 @@ def display(task, name, scheduler = None, display_cs = None, sd_cs = None, spi =
                         lines[n] = clear_line
             else:
                 lines = frame
-            #tttt = ticks_ms()
             x = 1
-            for n, l in enumerate(lines):
-                if l:
-                    if l == clear_line:
-                        Writer.set_textpos(lcd, n * 7, x)
-                        wri.clear_line(42, 0)
-                    else:
-                        Writer.set_textpos(lcd, n * 7, x)
-                        wri.clear_line(42, 0)
-                        Writer.set_textpos(lcd, n * 7, x)
-                        wri.printstring(l, 0)
-            refresh = True
+            if lines.count(False) < 9:
+                wri.clear_frame(18, 42, 0)
+                wri.printframe(frame, 0)
+                refresh = True
+            else:
+                for n, l in enumerate(lines):
+                    if l:
+                        if l == clear_line:
+                            Writer.set_textpos(lcd, n * 7, x)
+                            wri.clear_line(42, 0)
+                        else:
+                            Writer.set_textpos(lcd, n * 7, x)
+                            wri.clear_line(42, 0)
+                            Writer.set_textpos(lcd, n * 7, x)
+                            wri.printstring(l, 0)
+                refresh = True
             frame_previous = frame
-            #print(">>>", ticks_ms() - ttt, ticks_ms() - tttt)
+            #print(">>>", ticks_ms() - ttt), ticks_ms() - tttt)
         if "cursor" in msg.content:
             refresh = True
             x, y, c = msg.content["cursor"]
