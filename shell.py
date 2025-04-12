@@ -2,6 +2,7 @@ import sys
 import uos
 from math import ceil
 
+from listfile import ListFile
 from scheduler import Condition, Task, Message
 from common import exists, path_join, isfile, isdir
 
@@ -13,10 +14,10 @@ class Shell(object):
         self.display_width_with_prompt = display_size[0] + len(prompt_c)
         self.history_length = history_length
         self.prompt_c = prompt_c
-        self.history = []
+        self.history = [] # ListFile("./shell_history_cache.json", shrink_threshold = 10240) # 86.86k free for [], 88.05k for ListFile
         self.cache_width = cache_size[0]
         self.cache_lines = cache_size[1]
-        self.cache = []
+        self.cache = [] # ListFile("./shell_cache.json", shrink_threshold = 10240)
         self.cursor_color = 1
         self.current_row = 0
         self.current_col = 0
@@ -28,7 +29,7 @@ class Shell(object):
         self.cursor_id = None
         self.history_idx = 0
         self.scroll_row = 0
-        self.frame_history = []
+        self.frame_history = [] # ListFile("./shell_frame_history_cache.json", shrink_threshold = 10240) # 90.81k for ListFile
         self.session_task_id = None
         self.disable_output = False
         self.current_shell = None
@@ -193,21 +194,21 @@ class Shell(object):
     def input_char(self, c):
         try:
             if self.session_task_id is not None and self.scheduler.exists_task(self.session_task_id):
-                self.scheduler.add_task(Task(self.send_session_message, c, kwargs = {})) # execute cmd
+                self.scheduler.add_task(Task.get().load(self.send_session_message, c, condition = Condition.get(), kwargs = {})) # execute cmd
             else:
                 if c == "\n":
                     cmd = self.cache[-1][len(self.prompt_c):].strip()
                     if len(cmd) > 0:
                         if self.session_task_id is not None and self.scheduler.exists_task(self.session_task_id):
-                            self.scheduler.add_task(Task(self.send_session_message, self.cache[-1].strip(), kwargs = {})) # execute cmd
+                            self.scheduler.add_task(Task.get().load(self.send_session_message, self.cache[-1].strip(), condition = Condition.get(), kwargs = {})) # execute cmd
                         else:
                             self.history.append(self.cache[-1][len(self.prompt_c):])
                             self.write_history(self.cache[-1][len(self.prompt_c):])
                             command = cmd.split(" ")[0].strip()
                             if command in ("connect", "cat", "scan", "reconnect", "read", "help", "top", "python", "learn", "reset", "edit", "readpages", "editold", "cp", "rm", "bricks", "tank", "badapple", "date", "stats", "shutdown", "free", "sound", "tetris", "reboot", "basic", "ftpd"):
-                                self.scheduler.add_task(Task(self.run_coroutine, cmd, kwargs = {})) # execute cmd
+                                self.scheduler.add_task(Task.get().load(self.run_coroutine, cmd, condition = Condition.get(), kwargs = {})) # execute cmd
                             else:
-                                self.scheduler.add_task(Task(self.run, cmd, kwargs = {})) # execute cmd
+                                self.scheduler.add_task(Task.get().load(self.run, cmd, condition = Condition.get(), kwargs = {})) # execute cmd
                     else:
                         self.cache.append(self.prompt_c)
                         self.cache_to_frame_history()
@@ -282,14 +283,14 @@ class Shell(object):
         self.cache_to_frame_history()
             
     def run(self, task, cmd):
-        yield Condition(sleep = 0, send_msgs = [
-            Message({"cmd": cmd}, receiver = self.storage_id)
+        yield Condition.get().load(sleep = 0, send_msgs = [
+            Message.get().load({"cmd": cmd}, receiver = self.storage_id)
         ])
         
     def send_session_message(self, task, msg):
         #print("send_session_message:", msg, self.session_task_id)
-        yield Condition(sleep = 0, send_msgs = [
-            Message({"msg": msg}, receiver = self.session_task_id)
+        yield Condition.get().load(sleep = 0, send_msgs = [
+            Message.get().load({"msg": msg}, receiver = self.session_task_id)
         ])
         
     def run_coroutine(self, task, cmd):
@@ -306,7 +307,11 @@ class Shell(object):
             exec(import_str)
         #bin.__dict__[]
         #self.session_task_id = self.scheduler.add_task(Task(bin.__dict__[module].main, cmd, kwargs = {"args": args[1:], "shell_id": self.scheduler.shell_id, "shell": self}, need_to_clean = [bin.__dict__[module]])) # execute cmd
-        self.session_task_id = self.scheduler.add_task(Task(sys.modules[module].main, cmd, kwargs = {"args": args[1:], "shell_id": self.scheduler.shell_id, "shell": self}, need_to_clean = [sys.modules[module]])) # execute cmd
+        self.session_task_id = self.scheduler.add_task(
+            Task.get().load(sys.modules[module].main, cmd, condition = Condition.get(), kwargs = {"args": args[1:],
+                                                                                       "shell_id": self.scheduler.shell_id,
+                                                                                       "shell": self}, need_to_clean = [sys.modules[module]])
+        ) # execute cmd
     
     def cursor_move_left(self):
         if self.current_col > len(self.prompt_c):
