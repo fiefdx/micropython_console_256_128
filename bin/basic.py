@@ -293,6 +293,15 @@ class BasicShell(Shell):
         self.cache_to_frame_history()
 
 
+def diff_frame(f1, f2):
+    if len(f1) != len(f2):
+        return True
+    for i in range(len(f1)):
+        if f1[i] != f2[i]:
+            return True
+    return False
+
+
 def main(*args, **kwargs):
     task = args[0]
     name = args[1]
@@ -329,24 +338,37 @@ def main(*args, **kwargs):
             shell.current_shell = s
             s.write_line("   Welcome to PyBasic")
             s.write_char("\n")
+            frame_previous = None
+            frame = s.get_display_frame()
             yield Condition(sleep = 0, wait_msg = True, send_msgs = [
-                Message({"frame": s.get_display_frame(), "cursor": s.get_cursor_position(1)}, receiver = shell_id)
+                Message({"frame": frame, "cursor": s.get_cursor_position(1)}, receiver = shell_id)
             ])
+            frame_previous = frame
             msg = task.get_message()
             c = msg.content["msg"]
             while not s.exit:
-                #print("char:", c)
+                # print("char:", c)
                 if c != "":
                     s.input_char(c)
                     if not s.exit:
-                        yield Condition(sleep = 0, wait_msg = False, send_msgs = [
-                            Message({"frame": s.get_display_frame(), "cursor": s.get_cursor_position(1)}, receiver = shell_id)
-                        ])
+                        frame = s.get_display_frame()
+                        if diff_frame(frame, frame_previous):
+                            yield Condition(sleep = 0, wait_msg = False, send_msgs = [
+                                Message({"frame": frame, "cursor": s.get_cursor_position(1)}, receiver = shell_id)
+                            ])
+                            frame_previous = frame
+                        else:
+                            yield Condition(sleep = 0, wait_msg = False)
                     c = ""
                 if not s.exit:
-                    yield Condition(sleep = 0, wait_msg = False, send_msgs = [
-                        Message({"frame": s.get_display_frame(), "cursor": s.get_cursor_position(None)}, receiver = shell_id)
-                    ])
+                    frame = s.get_display_frame()
+                    if diff_frame(frame, frame_previous):
+                        yield Condition(sleep = 0, wait_msg = False, send_msgs = [
+                            Message({"frame": frame, "cursor": s.get_cursor_position(None)}, receiver = shell_id)
+                        ])
+                        frame_previous = frame
+                    else:
+                        yield Condition(sleep = 0, wait_msg = False)
                     msg = task.get_message()
                     if msg:
                         c = msg.content["msg"]
