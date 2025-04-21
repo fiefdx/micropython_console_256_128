@@ -242,6 +242,10 @@ class EditShell(object):
             
     def close(self):
         self.file.close()
+        self.cache.clear()
+        self.lines_pos.clear()
+        del self.cache
+        del self.lines_pos
 
 def main(*args, **kwargs):
     #print(kwargs["args"])
