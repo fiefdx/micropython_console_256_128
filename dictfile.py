@@ -8,7 +8,6 @@ class DictFile(object):
     def __init__(self, path):
         self.path = path
         self.wf = open(self.path, "w")
-        self.rf = open(self.path, "r")
         self.index = {}
 
     def writejson(self, d):
@@ -39,6 +38,7 @@ class DictFile(object):
                 t.append(Token(dd["c"], dd["C"], dd["l"]))
         else:
             t = Token(d["c"], d["C"], d["l"])
+        self.rf.close()
         return t
     
     def get(self, key):
@@ -50,17 +50,14 @@ class DictFile(object):
 
     def clear(self):
         self.index.clear()
-        self.rf.close()
         self.wf.close()
         self.wf = open(self.path, "w")
-        self.rf = open(self.path, "r")
 
 
 class DictFileSlow(object):
     def __init__(self, path):
         self.path = path
         self.wf = open(self.path, "w")
-        self.rf = open(self.path, "r")
         self.index = {}
         
     def writejson(self, d):
@@ -91,6 +88,7 @@ class DictFileSlow(object):
                 t.append(Token(dd["c"], dd["C"], dd["l"]))
         else:
             t = Token(d["c"], d["C"], d["l"])
+        self.rf.close()
         return t
     
     def get(self, key):
@@ -102,7 +100,5 @@ class DictFileSlow(object):
         
     def clear(self):
         self.index.clear()
-        self.rf.close()
         self.wf.close()
         self.wf = open(self.path, "w")
-        self.rf = open(self.path, "r")

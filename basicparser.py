@@ -91,6 +91,10 @@ class BASICArray:
                     for x in range(dimensions[0] + 1)
                 ]
 
+    def clear(self):
+        self.data.clear()
+        del self.data
+
     def pretty_print(self):
         print(str(self.data))
 
@@ -133,6 +137,24 @@ class BASICParser:
         self.__wait = "_no_wait"
         self.__input_value = ""
 
+    def clear(self):
+        keys = self.__symbol_table.keys()
+        for k in keys:
+            v = self.__symbol_table[k]
+            if isinstance(v, BASICArray):
+                v.clear()
+            del self.__symbol_table[k]
+        self.__symbol_table.clear()
+        self.__operand_stack.clear()
+        self.__data_values.clear()
+        self.__tokenlist.clear()
+        self.__tokenindex = None
+        self.last_flowsignal = None
+        self.__prnt_column = 0
+        self.__file_handles.clear()
+        self.__wait = "_no_wait"
+        self.__input_value = ""
+
     def parse(self, tokenlist, line_number):
         """Must be initialised with the list of
         BTokens to be processed. These tokens
@@ -149,7 +171,7 @@ class BASICParser:
 
         # Remember the line number to aid error reporting
         self.__line_number = line_number
-        self.__tokenlist = []
+        self.__tokenlist.clear()
         self.__tokenindex = 0
         linetokenindex = 0
         for token in tokenlist:
@@ -195,7 +217,7 @@ class BASICParser:
                     return flow
 
                 linetokenindex += 1
-                self.__tokenlist = []
+                self.__tokenlist.clear()
             elif token.category == token.ELSE and self.__tokenlist[0].category != token.OPEN:
                 # if we find an ELSE and we are not processing an OPEN statement, we must
                 # be in a recursive call and be processing a THEN block

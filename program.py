@@ -20,6 +20,7 @@ This is a list of statements, ordered by
 line number.
 
 """
+import gc
 
 from basictoken import BASICToken as Token
 from basicparser import BASICParser
@@ -41,6 +42,7 @@ class BASICData:
 
         # Data pointer
         self.__next_data = 0
+        self.data_values = []
 
 
     def delete(self):
@@ -85,7 +87,7 @@ class BASICData:
             raise RuntimeError('No DATA statements available to READ ' +
                                'in line ' + str(read_line_number))
 
-        data_values = []
+        self.data_values.clear()
 
         line_numbers = list(self.__datastmts.keys())
         line_numbers.sort()
@@ -103,23 +105,23 @@ class BASICData:
         sign = 1
         for token in tokenlist[1:]:
             if token.category != Token.COMMA:
-                #data_values.append(token.lexeme)
+                #self.data_values.append(token.lexeme)
 
                 if token.category == Token.STRING:
-                    data_values.append(token.lexeme)
+                    self.data_values.append(token.lexeme)
                 elif token.category == Token.UNSIGNEDINT:
-                    data_values.append(sign*int(token.lexeme))
+                    self.data_values.append(sign*int(token.lexeme))
                 elif token.category == Token.UNSIGNEDFLOAT:
-                    data_values.append(sign*eval(token.lexeme))
+                    self.data_values.append(sign*eval(token.lexeme))
                 elif token.category == Token.MINUS:
                     sign = -1
                 #else:
-                    #data_values.append(token.lexeme)
+                    #self.data_values.append(token.lexeme)
             else:
                 sign = 1
 
 
-        return data_values
+        return self.data_values
 
     def restore(self,restoreLineNo):
         if restoreLineNo == 0 or restoreLineNo in self.__datastmts:
@@ -165,6 +167,7 @@ class Program:
 
         # Setup DATA object
         self.__data = BASICData(ram = ram)
+        self.__parser = BASICParser(None)
         BASICParser.print = self.print
 
     def __str__(self):
@@ -317,11 +320,17 @@ class Program:
         """Execute the program"""
         
         BASICParser.print = execute_print
-        self.__parser = BASICParser(self.__data)
+        self.__parser.__data = self.__data
         self.__parser.print = execute_print
+        self.__parser.clear()
+        gc.collect()
         self.__data.restore(0) # reset data pointer
 
         line_numbers = self.line_numbers()
+        frame = shell.input_counter
+        frame_previous = frame
+        n = 0
+        stop = False
         
         if len(line_numbers) > 0:
             # Set up an index into the ordered list
@@ -334,24 +343,36 @@ class Program:
 
             # Run through the program until the
             # has line number has been reached
-            while True:
+            while not stop:
                 # execute_print("%s-%s-%s-%s" % (len(self.__program), len(self.__return_stack), len(self.__return_loop), len(self.__data.__datastmts)), end = '\n', terminated = True)
-                
+                gc.collect()
                 msg = task.get_message()
                 if msg:
-                    print(msg.content)
                     if msg.content["msg"] == "Ctrl-C":
                         msg.release()
-                        execute_print("Program terminated\n", end = '\n', terminated = True)
-                        raise StopIteration
+                        execute_print("Program terminated", end = '\n', terminated = True)
+                        stop = True
+                        # raise StopIteration
                     msg.release()
-                yield Condition.get().load(sleep = 0)
+                frame = shell.input_counter
+                if frame != frame_previous:
+                    frame_previous = frame
+                    n = 0
+                    yield Condition.get().load(sleep = 0)
+                elif n >= 10:
+                    n = 0
+                    yield Condition.get().load(sleep = 0)
                 
                 flowsignal = self.__execute(self.get_next_line_number(), execute_print)
                 if flowsignal == "_wait":
                     shell.wait_for_input = True
                     yield Condition.get().load(sleep = 0, wait_msg = True)
                     msg = task.get_message()
+                    if msg.content["msg"] == "Ctrl-C":
+                        msg.release()
+                        execute_print("Program terminated", end = '\n', terminated = True)
+                        stop = True
+                        # raise StopIteration
                     self.__parser.__input_value = msg.content["msg"]
                     msg.release()
                     flowsignal = self.__execute(self.get_next_line_number(), execute_print)
@@ -449,7 +470,9 @@ class Program:
                                 if msg.content["msg"] == "Ctrl-C":
                                     msg.release()
                                     execute_print("Program terminated", end = '\n', terminated = True)
-                                    raise StopIteration
+                                    # raise StopIteration
+                                    stop = True
+                                    break
                                 msg.release()
                             yield Condition.get().load(sleep = 0)
                             
@@ -505,6 +528,7 @@ class Program:
                     else:
                         # Reached end of program
                         break
+                n += 1
                 #yield Condition(sleep = 0)
 
         else:
