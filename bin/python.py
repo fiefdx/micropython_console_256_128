@@ -167,7 +167,7 @@ def main(*args, **kwargs):
         else:
             s = PyShell(display_size = (39, 18))
             shell.current_shell = s
-            s.write_line("   Welcome to Python")
+            s.write_line("             Welcome to Python")
             s.write_char("\n")
             yield Condition.get().load(sleep = 0, wait_msg = True, send_msgs = [
                 Message.get().load({"frame": s.get_display_frame(), "cursor": s.get_cursor_position(1)}, receiver = shell_id)
