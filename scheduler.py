@@ -64,6 +64,8 @@ class Condition(object):
     def get(cls):
         for c in cls.pool:
             if c.processed:
+                c.resume_at = ticks_add(ticks_ms(), 0)
+                c.wait_msg = False
                 c.processed = False
                 return c
             
