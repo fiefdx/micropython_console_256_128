@@ -82,171 +82,177 @@ def display(task, name, scheduler = None, display_cs = None, sd_cs = None, spi =
     while True:
         yield Condition.get().load(sleep = 0, wait_msg = True)
         msg = task.get_message()
-        sd_cs.high()
-        spi.init(baudrate=62500000, polarity=1, phase=1)
-        #spi.init(baudrate=1000000, polarity=1, phase=1)
-        # time.sleep_ms(1)
-        refresh = False
-        t = ticks_ms()
-        #print(msg.content)
-        if "contrast" in msg.content:
-            if msg.content["contrast"] == "contrast-up":
-                contrast += 1
-                if contrast >= contrast_max:
-                    contrast = contrast_max
-            elif msg.content["contrast"] == "contrast-down":
-                contrast -= 1
-                if contrast <= contrast_min:
-                    contrast = contrast_min
-            lcd.contrast(contrast)
-        if "clear" in msg.content:
-            lcd.fill(0)
-        if "frame" in msg.content:
-            #ttt = ticks_ms()
-            #lcd.fill(0)
-            frame = msg.content["frame"]
-            lines = [False for i in range(len(frame))]
-            if frame_previous:
-                if len(frame) < len(frame_previous):
-                    lines = [False for i in range(len(frame_previous))]
-                for n, l in enumerate(frame):
-                    if n < len(frame_previous):
-                        if l != frame_previous[n]:
-                            lines[n] = l
-                            if l == "":
+        while True:
+            try:
+                sd_cs.high()
+                spi.init(baudrate=62500000, polarity=1, phase=1)
+                #spi.init(baudrate=1000000, polarity=1, phase=1)
+                # time.sleep_ms(1)
+                refresh = False
+                t = ticks_ms()
+                #print(msg.content)
+                if "contrast" in msg.content:
+                    if msg.content["contrast"] == "contrast-up":
+                        contrast += 1
+                        if contrast >= contrast_max:
+                            contrast = contrast_max
+                    elif msg.content["contrast"] == "contrast-down":
+                        contrast -= 1
+                        if contrast <= contrast_min:
+                            contrast = contrast_min
+                    lcd.contrast(contrast)
+                if "clear" in msg.content:
+                    lcd.fill(0)
+                if "frame" in msg.content:
+                    #ttt = ticks_ms()
+                    #lcd.fill(0)
+                    frame = msg.content["frame"]
+                    lines = [False for i in range(len(frame))]
+                    if frame_previous:
+                        if len(frame) < len(frame_previous):
+                            lines = [False for i in range(len(frame_previous))]
+                        for n, l in enumerate(frame):
+                            if n < len(frame_previous):
+                                if l != frame_previous[n]:
+                                    lines[n] = l
+                                    if l == "":
+                                        lines[n] = clear_line
+                            else:
+                                lines[n] = l
+                        if len(frame_previous) > len(frame):
+                            for n in range(len(frame), len(frame_previous)):
                                 lines[n] = clear_line
                     else:
-                        lines[n] = l
-                if len(frame_previous) > len(frame):
-                    for n in range(len(frame), len(frame_previous)):
-                        lines[n] = clear_line
-            else:
-                lines = frame
-            x = 1
-            if lines.count(False) < 9:
-                wri.clear_frame(18, 42, 0)
-                wri.printframe(frame, 0)
-                refresh = True
-            else:
-                for n, l in enumerate(lines):
-                    if l:
-                        if l == clear_line:
-                            Writer.set_textpos(lcd, n * 7, x)
-                            wri.clear_line(42, 0)
-                        else:
-                            Writer.set_textpos(lcd, n * 7, x)
-                            wri.clear_line(42, 0)
-                            Writer.set_textpos(lcd, n * 7, x)
-                            wri.printstring(l, 0)
-                refresh = True
-            frame_previous = frame
-            #print(">>>", ticks_ms() - ttt), ticks_ms() - tttt)
-        if "cursor" in msg.content:
-            refresh = True
-            x, y, c = msg.content["cursor"]
-            if c == "hide":
-                #print("hide: ", x, y)
-                lcd.line(x * 6, y * 7, x * 6, y * 7 + 5, 0)
-            else:
-                # print("cursor: ", x, y, c)
-                if cursor_previous:
-                    xp, yp, cp = cursor_previous
-                    #if yp != y or xp > x:
-                    lcd.line(xp * 6, yp * 7, xp * 6, yp * 7 + 5, 0)
-                    #lcd.line(xp * 6, yp * 8, xp * 6, yp * 8 + 6, 0)
-                lcd.line(x * 6, y * 7, x * 6, y * 7 + 5, c)
-                #lcd.line(x * 6, y * 8, x * 6, y * 8 + 6, c)
-                cursor_previous = [x, y, c]
-        if "keyboard_mode" in msg.content:
-            keyboard_mode = msg.content["keyboard_mode"]
-            if keyboard_mode == "DF":
-                lcd.line(1, 127, 10, 127, 0)
-            elif keyboard_mode == "SH":
-                lcd.line(1, 127, 5, 127, 1)
-            elif keyboard_mode == "CP":
-                lcd.line(6, 127, 10, 127, 1)
-        #if scheduler.keyboard.mode == "DF":
-        #    lcd.line(127, 0, 127, 5, 0)
-        #elif scheduler.keyboard.mode == "SH":
-        #    lcd.line(127, 0, 127, 2, 1)
-        #elif scheduler.keyboard.mode == "CP":
-        #    lcd.line(127, 3, 127, 5, 1)
-        if "bricks" in msg.content:
-            refresh = True
-            offset_x = msg.content["bricks"]["offset_x"]
-            offset_y = msg.content["bricks"]["offset_y"]
-            width = msg.content["bricks"]["width"]
-            height = msg.content["bricks"]["height"]
-            brick_size = msg.content["bricks"]["size"]
-            data = msg.content["bricks"]["data"]
-            for w in range(width):
-                x = w * brick_size + offset_x
-                for h in range(height):
-                    y = h * brick_size + offset_y
-                    if data[h][w] == "o":
-                        lcd.rect(x, y, brick_size, brick_size, 0)
-                    elif data[h][w] == "x":
-                        lcd.rect(x, y, brick_size, brick_size, 1)
-        if "texts" in msg.content:
-            refresh = True
-            for text in msg.content["texts"]:
-                x = text["x"]
-                y = text["y"]
-                c = text["c"]
-                s = text["s"]
-                wri = Writer(lcd, font7)
-                #Writer.set_textpos(lcd, y, x)
-                #wri.printstring(c, 0)
-                Writer.set_textpos(lcd, y, x)
-                wri.printstring(s, 0)
-        if "rects" in msg.content:
-            refresh = True
-            for rect in msg.content["rects"]:
-                x, y, w, h = rect
-                lcd.rect(x, y, w, h, 1)
-        if "binary" in msg.content:
-            refresh = True
-            data = msg.content["binary"]
-            width, height = msg.content["width"], msg.content["height"]
-            offset_x, offset_y = msg.content["x"], msg.content["y"]
-            invert_color = msg.content["invert"]
-            for y in range(height):
-                i = 0
-                continue_255 = None
-                continue_0 = None
-                continue_8 = None
-                x = 0
-                while x < width:
-                    b = 7 - (x % 8)
-                    if continue_255 is None and data[y][i] == 255:
-                        continue_255 = data[y][i+1] * 8
-                        lcd.line(x + offset_x, y + offset_y, x + offset_x + continue_255, y + offset_y, 0 if invert_color else 1)
-                        x += continue_255
-                        i += 2
-                        continue_255 = None
-                    elif continue_0 is None and data[y][i] == 0:
-                        continue_0 = data[y][i+1] * 8
-                        lcd.line(x + offset_x, y + offset_y, x + offset_x + continue_0, y + offset_y, 1 if invert_color else 0)
-                        x += continue_0
-                        i += 2
-                        continue_0 = None
+                        lines = frame
+                    x = 1
+                    if lines.count(False) < 9:
+                        wri.clear_frame(18, 42, 0)
+                        wri.printframe(frame, 0)
+                        refresh = True
                     else:
-                        d = data[y][i]
-                        if continue_8 is None:
-                            continue_8 = 8
-                        if continue_8 is not None and continue_8 > 0:
-                            continue_8 -= 1
-                            if continue_8 == 0:
-                                continue_8 = None
-                                i += 1
-                        c = (d >> b) & 1
-                        if invert_color:
-                            c ^= 1
-                        lcd.pixel(x + offset_x, y + offset_y, c)
-                        x += 1
-        if refresh:
-            lcd.show()
-        msg.release()
+                        for n, l in enumerate(lines):
+                            if l:
+                                if l == clear_line:
+                                    Writer.set_textpos(lcd, n * 7, x)
+                                    wri.clear_line(42, 0)
+                                else:
+                                    Writer.set_textpos(lcd, n * 7, x)
+                                    wri.clear_line(42, 0)
+                                    Writer.set_textpos(lcd, n * 7, x)
+                                    wri.printstring(l, 0)
+                        refresh = True
+                    frame_previous = frame
+                    #print(">>>", ticks_ms() - ttt), ticks_ms() - tttt)
+                if "cursor" in msg.content:
+                    refresh = True
+                    x, y, c = msg.content["cursor"]
+                    if c == "hide":
+                        #print("hide: ", x, y)
+                        lcd.line(x * 6, y * 7, x * 6, y * 7 + 5, 0)
+                    else:
+                        # print("cursor: ", x, y, c)
+                        if cursor_previous:
+                            xp, yp, cp = cursor_previous
+                            #if yp != y or xp > x:
+                            lcd.line(xp * 6, yp * 7, xp * 6, yp * 7 + 5, 0)
+                            #lcd.line(xp * 6, yp * 8, xp * 6, yp * 8 + 6, 0)
+                        lcd.line(x * 6, y * 7, x * 6, y * 7 + 5, c)
+                        #lcd.line(x * 6, y * 8, x * 6, y * 8 + 6, c)
+                        cursor_previous = [x, y, c]
+                if "keyboard_mode" in msg.content:
+                    keyboard_mode = msg.content["keyboard_mode"]
+                    if keyboard_mode == "DF":
+                        lcd.line(1, 127, 10, 127, 0)
+                    elif keyboard_mode == "SH":
+                        lcd.line(1, 127, 5, 127, 1)
+                    elif keyboard_mode == "CP":
+                        lcd.line(6, 127, 10, 127, 1)
+                #if scheduler.keyboard.mode == "DF":
+                #    lcd.line(127, 0, 127, 5, 0)
+                #elif scheduler.keyboard.mode == "SH":
+                #    lcd.line(127, 0, 127, 2, 1)
+                #elif scheduler.keyboard.mode == "CP":
+                #    lcd.line(127, 3, 127, 5, 1)
+                if "bricks" in msg.content:
+                    refresh = True
+                    offset_x = msg.content["bricks"]["offset_x"]
+                    offset_y = msg.content["bricks"]["offset_y"]
+                    width = msg.content["bricks"]["width"]
+                    height = msg.content["bricks"]["height"]
+                    brick_size = msg.content["bricks"]["size"]
+                    data = msg.content["bricks"]["data"]
+                    for w in range(width):
+                        x = w * brick_size + offset_x
+                        for h in range(height):
+                            y = h * brick_size + offset_y
+                            if data[h][w] == "o":
+                                lcd.rect(x, y, brick_size, brick_size, 0)
+                            elif data[h][w] == "x":
+                                lcd.rect(x, y, brick_size, brick_size, 1)
+                if "texts" in msg.content:
+                    refresh = True
+                    for text in msg.content["texts"]:
+                        x = text["x"]
+                        y = text["y"]
+                        c = text["c"]
+                        s = text["s"]
+                        wri = Writer(lcd, font7)
+                        #Writer.set_textpos(lcd, y, x)
+                        #wri.printstring(c, 0)
+                        Writer.set_textpos(lcd, y, x)
+                        wri.printstring(s, 0)
+                if "rects" in msg.content:
+                    refresh = True
+                    for rect in msg.content["rects"]:
+                        x, y, w, h = rect
+                        lcd.rect(x, y, w, h, 1)
+                if "binary" in msg.content:
+                    refresh = True
+                    data = msg.content["binary"]
+                    width, height = msg.content["width"], msg.content["height"]
+                    offset_x, offset_y = msg.content["x"], msg.content["y"]
+                    invert_color = msg.content["invert"]
+                    for y in range(height):
+                        i = 0
+                        continue_255 = None
+                        continue_0 = None
+                        continue_8 = None
+                        x = 0
+                        while x < width:
+                            b = 7 - (x % 8)
+                            if continue_255 is None and data[y][i] == 255:
+                                continue_255 = data[y][i+1] * 8
+                                lcd.line(x + offset_x, y + offset_y, x + offset_x + continue_255, y + offset_y, 0 if invert_color else 1)
+                                x += continue_255
+                                i += 2
+                                continue_255 = None
+                            elif continue_0 is None and data[y][i] == 0:
+                                continue_0 = data[y][i+1] * 8
+                                lcd.line(x + offset_x, y + offset_y, x + offset_x + continue_0, y + offset_y, 1 if invert_color else 0)
+                                x += continue_0
+                                i += 2
+                                continue_0 = None
+                            else:
+                                d = data[y][i]
+                                if continue_8 is None:
+                                    continue_8 = 8
+                                if continue_8 is not None and continue_8 > 0:
+                                    continue_8 -= 1
+                                    if continue_8 == 0:
+                                        continue_8 = None
+                                        i += 1
+                                c = (d >> b) & 1
+                                if invert_color:
+                                    c ^= 1
+                                lcd.pixel(x + offset_x, y + offset_y, c)
+                                x += 1
+                if refresh:
+                    lcd.show()
+                msg.release()
+                break
+            except Exception as e:
+                msg.release()
+                print(e)
             
             
 def storage(task, name, scheduler = None, display_cs = None, sd_cs = None, spi = None):

@@ -128,7 +128,6 @@ class EditShell(object):
         self.total_lines = n
     
     def load_cache(self, line_num):
-        print("load_cache:", line_num)
         if self.exists_line(line_num):
             start_pos_idx = int(line_num / 10)
             skip_lines = line_num % 10
