@@ -6,6 +6,8 @@ from math import ceil
 from scheduler import Condition, Message
 from common import exists, path_join, isfile, isdir
 
+coroutine = True
+
 
 def main(*args, **kwargs):
     task = args[0]

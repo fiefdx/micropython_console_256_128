@@ -8,6 +8,9 @@ from io import StringIO
 from scheduler import Condition, Message
 from common import exists, path_join, isfile, isdir
 
+coroutine = True
+
+
 def count_words(p):
     n = 0
     fp = open(p, "r")

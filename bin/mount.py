@@ -3,6 +3,8 @@ import uos
 import sdcard
 from common import exists, path_join
 
+coroutine = False
+
 
 def main(*args, **kwargs):
     result = "invalid parameters"

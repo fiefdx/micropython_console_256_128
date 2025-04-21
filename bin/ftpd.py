@@ -5,6 +5,8 @@ import uftpd
 from scheduler import Condition, Message
 from common import exists, path_join
 
+coroutine = True
+
 
 def main(*args, **kwargs):
     result = "invalid parameters"

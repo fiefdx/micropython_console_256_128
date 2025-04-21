@@ -4,6 +4,8 @@ import uos
 from scheduler import Condition, Message
 from common import exists, path_join, isfile, isdir, path_split, mkdirs, copy, copyfile, copydir, rmtree
 
+coroutine = True
+
 
 def main(*args, **kwargs):
     result = "invalid parameters"

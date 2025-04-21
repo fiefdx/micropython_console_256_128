@@ -3,6 +3,8 @@ import time
 from wifi import WIFI
 from scheduler import Condition, Message
 
+coroutine = True
+
 
 def main(*args, **kwargs):
     task = args[0]

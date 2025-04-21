@@ -8,6 +8,9 @@ from shell import Shell
 from scheduler import Condition, Message
 from common import exists, path_join, isfile, isdir, path_split
 
+coroutine = True
+
+
 class PyShell(Shell):
     def __init__(self, display_size = (19, 9), cache_size = (-1, 50), history_length = 50, prompt_c = ">>>", scheduler = None, display_id = None, storage_id = None, history_file_path = "/.python_history"):
         self.display_width = display_size[0]

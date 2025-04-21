@@ -2,6 +2,8 @@ import sys
 
 from scheduler import Condition, Message
 
+coroutine = True
+
 
 def main(*args, **kwargs):
     result = "invalid parameters"

@@ -5,6 +5,9 @@ from machine import Pin, I2C
 from scheduler import Condition, Message
 from ds3231 import ds3231
 
+coroutine = True
+
+
 def main(*args, **kwargs):
     task = args[0]
     name = args[1]

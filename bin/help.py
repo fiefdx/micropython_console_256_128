@@ -1,5 +1,7 @@
 from scheduler import Condition, Message
 
+coroutine = True
+
 
 def main(*args, **kwargs):
     task = args[0]

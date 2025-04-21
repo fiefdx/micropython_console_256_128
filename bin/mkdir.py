@@ -2,6 +2,8 @@ import uos
 
 from common import exists, path_join, mkdirs
 
+coroutine = False
+
 
 def main(*args, **kwargs):
     result = "already exists!"

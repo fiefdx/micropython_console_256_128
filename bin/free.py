@@ -4,6 +4,8 @@ import sys
 
 from scheduler import Condition, Message
 
+coroutine = True
+
 
 def main(*args, **kwargs):
     args = kwargs["args"]

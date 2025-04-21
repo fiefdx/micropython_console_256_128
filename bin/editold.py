@@ -10,6 +10,9 @@ from shell import Shell
 from scheduler import Condition, Message
 from common import exists, path_join, isfile, isdir
 
+coroutine = True
+
+
 class EditShell(object):
     def __init__(self, file_path, display_size = (21, 9), cache_size = 8):
         self.display_width = display_size[0]

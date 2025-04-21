@@ -1,8 +1,9 @@
 import uos
 import machine
 
-from scheduler import Condition, Task, Message
 from common import exists, path_join, isfile, isdir, path_split, mkdirs, copy
+
+coroutine = False
 
 
 def main(*args, **kwargs):

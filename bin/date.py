@@ -5,6 +5,8 @@ from scheduler import Condition, Message
 from common import exists, path_join
 from ds3231 import ds3231
 
+coroutine = True
+
 
 def main(*args, **kwargs):
     result = "invalid parameters"

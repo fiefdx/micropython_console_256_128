@@ -80,7 +80,12 @@ class Shell(object):
         self.history_file.flush()
     
     def help_commands(self):
-        return "ls\npwd\ncd\nmkdir\nrm\ncp\ntouch\necho\ncat\nifconfig\nconnect\ndisconnect\nreconnect\nscan\nread\ntop\npython\nclear\nlearn\nreset\nedit\neditold\nrename\nbricks\ntank\nbadapple\numount\nmount\ndate\nstats\nsound\nhelp"
+        result = ""
+        fs = uos.listdir("/bin")
+        for f in fs:
+            if f not in ("__init__.py", ):
+                result += f.split(".")[0] + "\n"
+        return result[:-1]
         
     def get_display_frame(self):
         # return self.cache[-self.display_height:]
@@ -205,10 +210,7 @@ class Shell(object):
                             self.history.append(self.cache[-1][len(self.prompt_c):])
                             self.write_history(self.cache[-1][len(self.prompt_c):])
                             command = cmd.split(" ")[0].strip()
-                            if command in ("connect", "cat", "scan", "reconnect", "read", "help", "top", "python", "learn", "reset", "edit", "readpages", "editold", "cp", "rm", "bricks", "tank", "badapple", "date", "stats", "shutdown", "free", "sound", "tetris", "reboot", "ftpd"):
-                                self.scheduler.add_task(Task.get().load(self.run_coroutine, cmd, condition = Condition.get(), kwargs = {})) # execute cmd
-                            else:
-                                self.scheduler.add_task(Task.get().load(self.run, cmd, condition = Condition.get(), kwargs = {})) # execute cmd
+                            self.scheduler.add_task(Task.get().load(self.run_coroutine, cmd, condition = Condition.get(), kwargs = {})) # execute cmd
                     else:
                         self.cache.append(self.prompt_c)
                         self.cache_to_frame_history()
@@ -305,13 +307,18 @@ class Shell(object):
             #import_str = "from bin import %s" % module
             import_str = "import %s; sys.modules['%s'] = %s" % (module, module, module)
             exec(import_str)
-        #bin.__dict__[]
-        #self.session_task_id = self.scheduler.add_task(Task(bin.__dict__[module].main, cmd, kwargs = {"args": args[1:], "shell_id": self.scheduler.shell_id, "shell": self}, need_to_clean = [bin.__dict__[module]])) # execute cmd
-        self.session_task_id = self.scheduler.add_task(
-            Task.get().load(sys.modules[module].main, cmd, condition = Condition.get(), kwargs = {"args": args[1:],
-                                                                                       "shell_id": self.scheduler.shell_id,
-                                                                                       "shell": self}, need_to_clean = [sys.modules[module]])
-        ) # execute cmd
+        if sys.modules[module].coroutine:
+            #bin.__dict__[]
+            #self.session_task_id = self.scheduler.add_task(Task(bin.__dict__[module].main, cmd, kwargs = {"args": args[1:], "shell_id": self.scheduler.shell_id, "shell": self}, need_to_clean = [bin.__dict__[module]])) # execute cmd
+            self.session_task_id = self.scheduler.add_task(
+                Task.get().load(sys.modules[module].main, cmd, condition = Condition.get(), kwargs = {"args": args[1:],
+                                                                                           "shell_id": self.scheduler.shell_id,
+                                                                                           "shell": self}, need_to_clean = [sys.modules[module]])
+            ) # execute cmd
+        else:
+            yield Condition.get().load(sleep = 0, send_msgs = [
+                Message.get().load({"cmd": cmd}, receiver = self.storage_id)
+            ])
     
     def cursor_move_left(self):
         if self.current_col > len(self.prompt_c):

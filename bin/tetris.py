@@ -10,6 +10,9 @@ from shell import Shell
 from scheduler import Condition, Message
 from common import exists, path_join, isfile, isdir
 
+coroutine = True
+
+
 B = {
     0: [[
         "OOOO",

@@ -2,6 +2,8 @@ import uos
 
 from common import exists, path_join, get_size
 
+coroutine = False
+
 
 def main(*args, **kwargs):
     files = []

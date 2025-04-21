@@ -1,5 +1,7 @@
 import uos
 
+coroutine = False
+
 
 def main(*args, **kwargs):
     result = "invalid parameters"

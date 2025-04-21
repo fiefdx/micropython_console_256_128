@@ -2,6 +2,8 @@ import uos
 
 from common import exists, path_join, isfile, isdir, path_split, mkdirs, copy
 
+coroutine = False
+
 
 def main(*args, **kwargs):
     result = "invalid parameters"
