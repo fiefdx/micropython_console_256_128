@@ -287,6 +287,7 @@ def storage(task, name, scheduler = None, display_cs = None, sd_cs = None, spi =
                     output = sys.modules["%s" % module].main(*args[1:], shell_id = scheduler.shell_id, scheduler = scheduler)
                 #exec("del bin.%s" % module)
                 exec("del %s" % module)
+                del sys.modules["%s" % module].main
                 del sys.modules["%s" % module]
                 gc.collect()
                 #gc.mem_free()
