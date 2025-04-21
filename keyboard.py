@@ -122,13 +122,13 @@ class KeyBoard(object):
                                 self.mode = "SH"
                             elif self.mode == "SH":
                                 self.mode = "DF"
-                            self.button = key = "SH"
+                            self.button = "SH"
                         elif self.keys[y][x][0] == "CP": # CP mode change
                             if self.mode == "DF":
                                 self.mode = "CP"
                             elif self.mode == "CP":
                                 self.mode = "DF"
-                            self.button = key = "CP"
+                            self.button = "CP"
                         else: # other keys
                             keys = self.keys[y][x]
                             key = keys[0]

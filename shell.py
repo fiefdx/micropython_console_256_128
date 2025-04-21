@@ -2,7 +2,7 @@ import sys
 import uos
 from math import ceil
 
-from listfile import ListFile
+# from listfile import ListFile
 from scheduler import Condition, Task, Message
 from common import exists, path_join, isfile, isdir
 
@@ -205,7 +205,7 @@ class Shell(object):
                             self.history.append(self.cache[-1][len(self.prompt_c):])
                             self.write_history(self.cache[-1][len(self.prompt_c):])
                             command = cmd.split(" ")[0].strip()
-                            if command in ("connect", "cat", "scan", "reconnect", "read", "help", "top", "python", "learn", "reset", "edit", "readpages", "editold", "cp", "rm", "bricks", "tank", "badapple", "date", "stats", "shutdown", "free", "sound", "tetris", "reboot", "basic", "ftpd"):
+                            if command in ("connect", "cat", "scan", "reconnect", "read", "help", "top", "python", "learn", "reset", "edit", "readpages", "editold", "cp", "rm", "bricks", "tank", "badapple", "date", "stats", "shutdown", "free", "sound", "tetris", "reboot", "ftpd"):
                                 self.scheduler.add_task(Task.get().load(self.run_coroutine, cmd, condition = Condition.get(), kwargs = {})) # execute cmd
                             else:
                                 self.scheduler.add_task(Task.get().load(self.run, cmd, condition = Condition.get(), kwargs = {})) # execute cmd

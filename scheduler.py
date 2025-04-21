@@ -297,6 +297,8 @@ class Scheluder(object):
                                         m_name = m.__name__
                                         exec("del %s" % m.__name__)
                                         # exec("del %s" % m.__name__.split(".")[-1])
+                                        if hasattr(m, "main"):
+                                            del m.main
                                         del sys.modules[m_name]
                                         gc.collect()
                                     except Exception as e:
