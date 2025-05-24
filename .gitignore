@@ -6,6 +6,7 @@
 *.ttf
 *.mpy
 *.json
+*.wav
 ST75256_test.py
 basic_shell_loop.py
 main.basic.loop.py
