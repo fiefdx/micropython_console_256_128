@@ -29,3 +29,19 @@ class Writer(object):
         fbc = framebuf.FrameBuffer(bytearray(tile["tile"]), tile["width"], tile["height"], self.map)
         self.device.blit(fbc, offset_x, offset_y)
         del fbc
+        
+    def add_tiles(self, tiles):
+        for tile in tiles:
+            self.tiles[tile["id"]] = tile["body"]
+            
+    def add_tile(self, tile_id, tile_body):
+        self.tiles[tile_id] = tile_body
+        
+    def remove_tiles(self, tile_ids):
+        for tile_id in tile_ids:
+            if tile_id in self.tiles:
+                del self.tiles[tile_id]
+        
+    def remove_tile(self, tile_id):
+        if tile_id in self.tiles:
+            del self.tiles[tile_id]
