@@ -332,7 +332,7 @@ class Writer():
         fbc = framebuf.FrameBuffer(buf, self.clip_width, self.char_height, self.map)
         #tttt = ticks_ms()
         for p in self.char_map[char]:
-            self.device.blit(fbc, p * self.char_width + 1, s.text_row)
+            self.device.blit(fbc, p * self.char_width + s.text_col, s.text_row)
             #s.text_col += self.char_width
         #self.cpos += 1
         #ttttt = ticks_ms()
