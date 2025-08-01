@@ -51,9 +51,6 @@ class Game(object):
         self.disc = Disc(self.black, 0, -1)
         self.think = {self.black: 0, self.white: 0, self.empty: 0}
         self.stats = {self.black: 0, self.white: 0, self.empty: 0}
-        # self.top_y = 5
-        # self.left_x = 6
-        # self.right_x = 0
 
     def is_full(self):
         return self.discs_counter >= 42
@@ -78,127 +75,6 @@ class Game(object):
             self.discs_counter += 1
             return y
         return -1
-
-    # def check_offensive_move23(self, color):
-    #     r = [0, 0, 0, 0, 0, 0, 0]
-    #     for y in range(6):
-    #         for x in range(4):
-    #             if (self.table[y][x] == self.table[y][x + 1] == self.empty and self.table[y][x + 2] != self.empty and self.table[y][x + 3] != self.empty and
-    #                 self.table[y][x + 2] == self.table[y][x + 3] == color):
-    #                 if self.available_place_y(x) == y:
-    #                     r[x] += 1
-    #                 if self.available_place_y(x + 1) == y:
-    #                     r[x + 1] += 1
-    #             if (self.table[y][x + 1] == self.table[y][x + 2] == self.empty and self.table[y][x] != self.empty and self.table[y][x + 3] != self.empty and
-    #                 self.table[y][x] == self.table[y][x + 3] == color):
-    #                 if self.available_place_y(x + 1) == y:
-    #                     r[x + 1] += 1
-    #                 if self.available_place_y(x + 2) == y:
-    #                     r[x + 2] += 1
-    #             if (self.table[y][x + 2] == self.table[y][x + 3] == self.empty and self.table[y][x] != self.empty and self.table[y][x + 1] != self.empty and
-    #                 self.table[y][x] == self.table[y][x + 1] == color):
-    #                 if self.available_place_y(x + 2) == y:
-    #                     r[x + 2] += 1
-    #                 if self.available_place_y(x + 3) == y:
-    #                     r[x + 3] += 1
-    #             if (self.table[y][x] == self.table[y][x + 2] == self.empty and self.table[y][x + 1] != self.empty and self.table[y][x + 3] != self.empty and
-    #                 self.table[y][x + 1] == self.table[y][x + 3] == color):
-    #                 if self.available_place_y(x) == y:
-    #                     r[x] += 1
-    #                 if self.available_place_y(x + 2) == y:
-    #                     r[x + 2] += 1
-    #             if (self.table[y][x + 1] == self.table[y][x + 3] == self.empty and self.table[y][x] != self.empty and self.table[y][x + 2] != self.empty and
-    #                 self.table[y][x] == self.table[y][x + 2] == color):
-    #                 if self.available_place_y(x + 1) == y:
-    #                     r[x + 1] += 1
-    #                 if self.available_place_y(x + 3) == y:
-    #                     r[x + 3] += 1
-    #             if (self.table[y][x] == self.table[y][x + 3] == self.empty and self.table[y][x + 1] != self.empty and self.table[y][x + 2] != self.empty and
-    #                 self.table[y][x + 1] == self.table[y][x + 2] == color):
-    #                 if self.available_place_y(x) == y:
-    #                     r[x] += 1
-    #                 if self.available_place_y(x + 3) == y:
-    #                     r[x + 3] += 1
-    #     for y in range(3):
-    #         for x in range(7):
-    #             if (self.table[y][x] == self.table[y + 1][x] == self.empty and self.table[y + 2][x] != self.empty and self.table[y + 3][x] != self.empty and
-    #                 self.available_place_y(x) == y + 1 and self.table[y + 2][x] == self.table[y + 3][x] == color):
-    #                 r[x] += 1
-    #         for x in range(4):
-    #             if (self.table[y][x] == self.table[y + 1][x + 1] == self.empty and self.table[y + 2][x + 2] != self.empty and self.table[y + 3][x + 3] != self.empty and
-    #                 self.table[y + 2][x + 2] == self.table[y + 3][x + 3] == color):
-    #                 if self.available_place_y(x) == y:
-    #                     r[x] += 1
-    #                 if self.available_place_y(x + 1) == y + 1:
-    #                     r[x + 1] += 1
-    #             if (self.table[y + 1][x + 1] == self.table[y + 2][x + 2] == self.empty and self.table[y][x] != self.empty and self.table[y + 3][x + 3] != self.empty and
-    #                 self.table[y][x] == self.table[y + 3][x + 3] == color):
-    #                 if self.available_place_y(x + 1) == y + 1:
-    #                     r[x + 1] += 1
-    #                 if self.available_place_y(x + 2) == y + 2:
-    #                     r[x + 2] += 1
-    #             if (self.table[y + 2][x + 2] == self.table[y + 3][x + 3] == self.empty and self.table[y][x] != self.empty and self.table[y + 1][x + 1] != self.empty and
-    #                 self.table[y][x] == self.table[y + 1][x + 1] == color):
-    #                 if self.available_place_y(x + 2) == y + 2:
-    #                     r[x + 2] += 1
-    #                 if self.available_place_y(x + 3) == y + 3:
-    #                     r[x + 3] += 1
-    #             if (self.table[y][x] == self.table[y + 2][x + 2] == self.empty and self.table[y + 1][x + 1] != self.empty and self.table[y + 3][x + 3] != self.empty and
-    #                 self.table[y + 1][x + 1] == self.table[y + 3][x + 3] == color):
-    #                 if self.available_place_y(x) == y:
-    #                     r[x] += 1
-    #                 if self.available_place_y(x + 2) == y + 2:
-    #                     r[x + 2] += 1
-    #             if (self.table[y + 1][x + 1] == self.table[y + 3][x + 3] == self.empty and self.table[y][x] != self.empty and self.table[y + 2][x + 2] != self.empty and
-    #                 self.table[y][x] == self.table[y + 2][x + 2] == color):
-    #                 if self.available_place_y(x + 1) == y + 1:
-    #                     r[x + 1] += 1
-    #                 if self.available_place_y(x + 3) == y + 3:
-    #                     r[x + 3] += 1
-    #             if (self.table[y][x] == self.table[y + 3][x + 3] == self.empty and self.table[y + 1][x + 1] != self.empty and self.table[y + 2][x + 2] != self.empty and
-    #                 self.table[y + 1][x + 1] == self.table[y + 2][x + 2] == color):
-    #                 if self.available_place_y(x) == y:
-    #                     r[x] += 1
-    #                 if self.available_place_y(x + 3) == y + 3:
-    #                     r[x + 3] += 1
-    #         for x in range(3, 7):
-    #             if (self.table[y][x] == self.table[y + 1][x - 1] == self.empty and self.table[y + 2][x - 2] != self.empty and self.table[y + 3][x - 3] != self.empty and
-    #                 self.table[y + 2][x - 2] == self.table[y + 3][x - 3] == color):
-    #                 if self.available_place_y(x) == y:
-    #                     r[x] += 1
-    #                 if self.available_place_y(x - 1) == y + 1:
-    #                     r[x - 1] += 1
-    #             if (self.table[y + 1][x - 1] == self.table[y + 2][x - 2] == self.empty and self.table[y][x] != self.empty and self.table[y + 3][x - 3] != self.empty and
-    #                 self.table[y][x] == self.table[y + 3][x - 3] == color):
-    #                 if self.available_place_y(x - 1) == y + 1:
-    #                     r[x - 1] += 1
-    #                 if self.available_place_y(x - 2) == y + 2:
-    #                     r[x - 2] += 1
-    #             if (self.table[y + 2][x - 2] == self.table[y + 3][x - 3] == self.empty and self.table[y][x] != self.empty and self.table[y + 1][x - 1] != self.empty and
-    #                 self.table[y][x] == self.table[y + 1][x - 1] == color):
-    #                 if self.available_place_y(x - 2) == y + 2:
-    #                     r[x - 2] += 1
-    #                 if self.available_place_y(x - 3) == y + 3:
-    #                     r[x - 3] += 1
-    #             if (self.table[y][x] == self.table[y + 2][x - 2] == self.empty and self.table[y + 1][x - 1] != self.empty and self.table[y + 3][x - 3] != self.empty and
-    #                 self.table[y + 1][x - 1] == self.table[y + 3][x - 3] == color):
-    #                 if self.available_place_y(x) == y:
-    #                     r[x] += 1
-    #                 if self.available_place_y(x - 2) == y + 2:
-    #                     r[x - 2] += 1
-    #             if (self.table[y + 1][x - 1] == self.table[y + 3][x - 3] == self.empty and self.table[y][x] != self.empty and self.table[y + 2][x - 2] != self.empty and
-    #                 self.table[y][x] == self.table[y + 2][x - 2] == color):
-    #                 if self.available_place_y(x - 1) == y + 1:
-    #                     r[x - 1] += 1
-    #                 if self.available_place_y(x - 3) == y + 3:
-    #                     r[x - 3] += 1
-    #             if (self.table[y][x] == self.table[y + 3][x - 3] == self.empty and self.table[y + 1][x - 1] != self.empty and self.table[y + 2][x - 2] != self.empty and
-    #                 self.table[y + 1][x - 1] == self.table[y + 2][x - 2] == color):
-    #                 if self.available_place_y(x) == y:
-    #                     r[x] += 1
-    #                 if self.available_place_y(x - 3) == y + 3:
-    #                     r[x - 3] += 1
-    #     return r
 
     def is_same3(self, v1, v2, v3, color):
         return v1 == v2 == v3 == color
@@ -234,14 +110,39 @@ class Game(object):
             if y != -1:
                 self.table[y][x] = color
                 for xx in range(max(0, x - 3), min(x, 3)):
-                    if self.is_line5(self.table[y][xx], self.table[y][xx + 1], self.table[y][xx + 2], self.table[y][xx + 3], self.table[y][xx + 4], color):
+                    if self.is_line5(self.table[y][xx], self.table[y][xx + 1], self.table[y][xx + 2], self.table[y][xx + 3], self.table[y][xx + 4], color) and (y == self.available_place_y(xx) == self.available_place_y(xx + 4)):
                         r[x] += 1
                 for d in range(4):
                     if x - d >= 0 and x - d + 4 <= 6 and y - d >= 0 and y - d + 4 <= 5:
-                        if self.is_line5(self.table[y - d][x - d], self.table[y - d + 1][x - d + 1], self.table[y - d + 2][x - d + 2], self.table[y - d + 3][x - d + 3], self.table[y - d + 4][x - d + 4], color):
+                        if self.is_line5(self.table[y - d][x - d], self.table[y - d + 1][x - d + 1], self.table[y - d + 2][x - d + 2], self.table[y - d + 3][x - d + 3], self.table[y - d + 4][x - d + 4], color) and (self.available_place_y(x - d) == y - d and self.available_place_y(x - d + 4) == y - d + 4):
                             r[x] += 1
                     if x - d >= 0 and x - d + 4 <= 6 and y + d <= 5 and y + d - 4 >= 0:
-                        if self.is_line5(self.table[y + d][x - d], self.table[y + d - 1][x - d + 1], self.table[y + d - 2][x - d + 2], self.table[y + d - 3][x - d + 3], self.table[y + d - 4][x - d + 4], color):
+                        if self.is_line5(self.table[y + d][x - d], self.table[y + d - 1][x - d + 1], self.table[y + d - 2][x - d + 2], self.table[y + d - 3][x - d + 3], self.table[y + d - 4][x - d + 4], color)  and (self.available_place_y(x - d) == y + d and self.available_place_y(x - d + 4) == y + d - 4):
+                            r[x] += 1
+                self.table[y][x] = self.empty
+        return r
+
+    def is_any_line4(self, v1, v2, v3, v4, color):
+        return ((v1 == v2 == v3 == color and v4 == self.empty) or
+                (v1 == v3 == v4 == color and v2 == self.empty) or
+                (v2 == v3 == v4 == color and v1 == self.empty) or
+                (v1 == v2 == v4 == color and v3 == self.empty))
+
+    def check_offensive_lock_move23(self, color):
+        r = [0, 0, 0, 0, 0, 0, 0]
+        for x in range(7):
+            y = self.available_place_y(x)
+            if y != -1:
+                self.table[y][x] = color
+                for xx in range(max(0, x - 3), min(x + 1, 4)):
+                    if self.is_any_line4(self.table[y][xx], self.table[y][xx + 1], self.table[y][xx + 2], self.table[y][xx + 3], color):
+                        r[x] += 1
+                for d in range(4):
+                    if x - d >= 0 and x - d + 3 <= 6 and y - d >= 0 and y - d + 3 <= 5:
+                        if self.is_any_line4(self.table[y - d][x - d], self.table[y - d + 1][x - d + 1], self.table[y - d + 2][x - d + 2], self.table[y - d + 3][x - d + 3], color):
+                            r[x] += 1
+                    if x - d >= 0 and x - d + 3 <= 6 and y + d <= 5 and y + d - 3 >= 0:
+                        if self.is_any_line4(self.table[y + d][x - d], self.table[y + d - 1][x - d + 1], self.table[y + d - 2][x - d + 2], self.table[y + d - 3][x - d + 3], color):
                             r[x] += 1
                 self.table[y][x] = self.empty
         return r
@@ -270,76 +171,8 @@ class Game(object):
                 self.table[y][x] = self.empty
         return r
 
-    # def check_offensive_move34(self, color):
-    #     r = [0, 0, 0, 0, 0, 0, 0]
-    #     for y in range(max(self.top_y - 1, 0), 6):
-    #         if self.left_x - 1 < 4:
-    #             for x in range(max(0, self.left_x - 1), min(4, self.right_x + 1)):
-    #                 if (self.table[y][x] != self.empty and self.table[y][x + 3] == self.empty and
-    #                     self.table[y][x] == self.table[y][x + 1] == self.table[y][x + 2] == color and self.available_place_y(x + 3) == y):
-    #                     r[x + 3] += 1
-    #                 if (self.table[y][x] == self.empty and self.table[y][x + 1] != self.empty and
-    #                     self.table[y][x + 1] == self.table[y][x + 2] == self.table[y][x + 3] == color and self.available_place_y(x) == y):
-    #                     r[x] += 1
-    #                 if (self.table[y][x] != self.empty and self.table[y][x + 2] == self.empty and
-    #                     self.table[y][x] == self.table[y][x + 1] == self.table[y][x + 3] == color and self.available_place_y(x + 2) == y):
-    #                     r[x + 2] += 1
-    #                 if (self.table[y][x] != self.empty and self.table[y][x + 1] == self.empty and
-    #                     self.table[y][x] == self.table[y][x + 2] == self.table[y][x + 3] == color and self.available_place_y(x + 1) == y):
-    #                     r[x + 1] += 1
-    #     if self.top_y - 1 < 3:
-    #         for y in range(max(self.top_y - 1, 0), 3):
-    #             for x in range(max(0, self.left_x), min(7, self.right_x + 1)):
-    #                 if (self.table[y][x] == self.empty and self.table[y + 1][x] != self.empty and
-    #                     self.table[y + 1][x] == self.table[y + 2][x] == self.table[y + 3][x] == color and self.available_place_y(x) == y):
-    #                     r[x] += 1
-    #             for x in range(max(0, self.left_x - 1), min(4, self.right_x + 1)):
-    #                 if (self.table[y][x] != self.empty and self.table[y + 3][x + 3] == self.empty and
-    #                     self.table[y][x] == self.table[y + 1][x + 1] == self.table[y + 2][x + 2] == color and self.available_place_y(x + 3) == y + 3):
-    #                     r[x + 3] += 1
-    #                 if (self.table[y][x] == self.empty and self.table[y + 1][x + 1] != self.empty and
-    #                     self.table[y + 3][x + 3] == self.table[y + 1][x + 1] == self.table[y + 2][x + 2] == color and self.available_place_y(x) == y):
-    #                     r[x] += 1
-    #                 if (self.table[y][x] != self.empty and self.table[y + 2][x + 2] == self.empty and
-    #                     self.table[y][x] == self.table[y + 1][x + 1] == self.table[y + 3][x + 3] == color and self.available_place_y(x + 2) == y + 2):
-    #                     r[x + 2] += 1
-    #                 if (self.table[y][x] != self.empty and self.table[y + 1][x + 1] == self.empty and
-    #                     self.table[y][x] == self.table[y + 3][x + 3] == self.table[y + 2][x + 2] == color and self.available_place_y(x + 1) == y + 1):
-    #                     r[x + 1] += 1
-    #             for x in range(max(3, self.left_x - 1), min(7, self.right_x + 1)):
-    #                 if (self.table[y][x] != self.empty and self.table[y + 3][x - 3] == self.empty and
-    #                     self.table[y][x] == self.table[y + 1][x - 1] == self.table[y + 2][x - 2] == color and self.available_place_y(x - 3) == y + 3):
-    #                     r[x - 3] += 1
-    #                 if (self.table[y][x] == self.empty and self.table[y + 1][x - 1] != self.empty and
-    #                     self.table[y + 3][x - 3] == self.table[y + 1][x - 1] == self.table[y + 2][x - 2] == color and self.available_place_y(x) == y):
-    #                     r[x] += 1
-    #                 if (self.table[y][x] != self.empty and self.table[y + 2][x - 2] == self.empty and
-    #                     self.table[y][x] == self.table[y + 1][x - 1] == self.table[y + 3][x - 3] == color and self.available_place_y(x - 2) == y + 2):
-    #                     r[x - 2] += 1
-    #                 if (self.table[y][x] != self.empty and self.table[y + 1][x - 1] == self.empty and
-    #                     self.table[y][x] == self.table[y + 3][x - 3] == self.table[y + 2][x - 2] == color and self.available_place_y(x - 1) == y + 1):
-    #                     r[x - 1] += 1
-    #     return r
-
     def is_line4(self, v1, v2, v3, v4):
         return v1 != self.empty and v1 == v2 == v3 == v4
-
-    # def check_status(self):
-    #     for y in range(max(self.top_y - 1, 0), 6):
-    #         for x in range(4):
-    #             if self.is_line4(self.table[y][x], self.table[y][x + 1], self.table[y][x + 2], self.table[y][x + 3]):
-    #                 return self.table[y][x]
-    #     for y in range(3, 6):
-    #         for x in range(7):
-    #             if self.is_line4(self.table[y][x], self.table[y - 1][x], self.table[y - 2][x], self.table[y - 3][x]):
-    #                 return self.table[y][x]
-    #         for x in range(4):
-    #             if self.is_line4(self.table[y][x], self.table[y - 1][x + 1], self.table[y - 2][x + 2], self.table[y - 3][x + 3]):
-    #                 return self.table[y][x]
-    #         for x in range(3, 7):
-    #             if self.is_line4(self.table[y][x], self.table[y - 1][x - 1], self.table[y - 2][x - 2], self.table[y - 3][x - 3]):
-    #                 return self.table[y][x]
-    #     return self.empty
 
     def check_status(self, x, y):
         for xx in range(max(0, x - 3), min(x + 1, 4)):
@@ -369,12 +202,6 @@ class Game(object):
     def turn_place_disc(self, x):
         y = self.place_disc(x, self.turn)
         if y != -1:
-            # if self.top_y > y:
-            #     self.top_y = y
-            # if x > self.right_x:
-            #     self.right_x = x
-            # if x < self.left_x:
-            #     self.left_x = x
             if self.turn == self.black:
                 self.turn = self.white
             else:
@@ -393,27 +220,40 @@ class Game(object):
         return False
 
     def check_win_move(self):
-        # m23 = self.check_offensive_move23(self.turn)
         m34 = self.check_offensive_move34(self.turn)
-        for x in range(7):
-            # if m23[x] > 0 and m34[x] > 0:
-            #     return x
-            if m34[x] > 0:
-                return x
+        m34_max = max(m34)
+        if m34_max > 0:
+            return m34.index(m34_max)
+        # for x in range(7):
+        #     if m34[x] > 0:
+        #         return x
         return -1
 
     def check_defensive_move(self):
         opponent = self.black if self.turn == self.white else self.white
-        m23 = self.check_offensive_move23(opponent)
+        # m23 = self.check_offensive_move23(opponent)
         m34 = self.check_offensive_move34(opponent)
         m3 = self.check_offensive_win_move23(opponent)
-        for x in range(7):
-            if m23[x] > 0 and m34[x] > 0:
-                return x
-            elif m34[x] > 0:
-                return x
-            elif m3[x] > 0:
-                return x
+        # m3l = self.check_offensive_lock_move23(opponent)
+        m34_max = max(m34)
+        if m34_max > 0:
+            idx = [i for i, v in enumerate(m34) if v == m34_max]
+            return random.choice(idx)
+        m3_max = max(m3)
+        if m3_max > 0:
+            idx = [i for i, v in enumerate(m3) if v == m3_max]
+            return random.choice(idx)
+        # for x in range(7):
+        #     # if m23[x] > 0 and m34[x] > 0:
+        #     #     return x
+        #     if m34[x] > 0:
+        #         return x
+        # for x in range(7):
+        #     if m3[x] > 0:
+        #         return x
+        # for x in range(7):
+        #     if m3l[x] > 0:
+        #         return x
         return -1
 
     def turn_random_place_disc(self):
@@ -427,6 +267,8 @@ class Game(object):
 
     def choose_best_move(self):
         t = ticks_ms()
+        if self.discs_counter < 2:
+            return 3
         best_x = self.check_win_move()
         if best_x == -1:
             best_x = self.check_defensive_move()
@@ -448,9 +290,9 @@ class Game(object):
                 if stats[x][self.turn] > max_win: # or (stats[x][self.turn] == max_win and stats[x][self.empty] > stats[best_x][self.empty]):
                     max_win = stats[x][self.turn]
                     best_x = x
-                    self.think[self.black] = stats[x][self.black]
-                    self.think[self.white] = stats[x][self.white]
-                    self.think[self.empty] = stats[x][self.empty]
+            self.think[self.black] = stats[best_x][self.black]
+            self.think[self.white] = stats[best_x][self.white]
+            self.think[self.empty] = stats[best_x][self.empty]
         self.think_use_time = (ticks_ms() - t) / 1000.0
         return best_x
 
