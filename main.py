@@ -29,6 +29,7 @@ import sdcard
 import font7
 # import font6
 from writer import Writer
+from tile_writer import Writer as TileWriter
 from scheduler import Scheluder, Condition, Task, Message
 from common import ticks_ms, ticks_add, ticks_diff, sleep_ms
 from shell import Shell
@@ -52,15 +53,15 @@ def monitor(task, name, scheduler = None, display_id = None):
         #print(monitor_msg)
         #print(len(scheduler.tasks))
         #scheduler.add_task(Task.get().load(free.main, "test", condition = Condition.get(), kwargs = {"args": [], "shell_id": scheduler.shell_id}))
-        ram_free = gc.mem_free()
-        ram_used = gc.mem_alloc()
-        monitor_msg = "R%6.2f%%|F%7.2fk/%d|U%7.2fk/%d" % (100.0 - (ram_free * 100 / (264 * 1024)),
-                                                          ram_free / 1024,
-                                                          ram_free,
-                                                          ram_used / 1024,
-                                                          ram_used)
-        print(monitor_msg)
-        print(Message.remain(), Condition.remain(), Task.remain())
+        # ram_free = gc.mem_free()
+        # ram_used = gc.mem_alloc()
+        # monitor_msg = "R%6.2f%%|F%7.2fk/%d|U%7.2fk/%d" % (100.0 - (ram_free * 100 / (264 * 1024)),
+        #                                                   ram_free / 1024,
+        #                                                   ram_free,
+        #                                                   ram_used / 1024,
+        #                                                   ram_used)
+        # print(monitor_msg)
+        # print(Message.remain(), Condition.remain(), Task.remain())
         yield Condition.get().load(sleep = 2000)
         #yield Condition(sleep = 100, send_msgs = [Message.get().load({"output": monitor_msg}, receiver = scheduler.shell_id)])
 
@@ -79,6 +80,41 @@ def display(task, name, scheduler = None, display_cs = None, sd_cs = None, spi =
     cursor_previous = None
     wri = Writer(lcd, font7)
     wri.wrap = False
+    tile61 = [
+        0b11111111,
+        0b10000111,
+        0b10110111,
+        0b10110111,
+        0b10000111,
+        0b11111111,
+    ]
+    tile60 = [
+        0b00000011,
+        0b00000011,
+        0b00000011,
+        0b00000011,
+        0b00000011,
+        0b00000011,
+    ]
+    tile41 = [
+        0b11111111,
+        0b10011111,
+        0b10011111,
+        0b11111111,
+    ]
+    tile40 = [
+        0b00001111,
+        0b00001111,
+        0b00001111,
+        0b00001111,
+    ]
+    tiles = {
+        60: {"tile": tile60, "width": 6, "height": 6},
+        61: {"tile": tile61, "width": 6, "height": 6},
+        40: {"tile": tile40, "width": 4, "height": 4},
+        41: {"tile": tile41, "width": 4, "height": 4},
+    }
+    tile_wri = TileWriter(lcd, tiles)
     while True:
         yield Condition.get().load(sleep = 0, wait_msg = True)
         msg = task.get_message()
@@ -91,6 +127,8 @@ def display(task, name, scheduler = None, display_cs = None, sd_cs = None, spi =
                 refresh = False
                 t = ticks_ms()
                 #print(msg.content)
+                if "update_tiles" in msg.content:
+                    tile_wri.add_tiles(msg.content["update_tiles"])
                 if "contrast" in msg.content:
                     if msg.content["contrast"] == "contrast-up":
                         contrast += 1
@@ -173,6 +211,24 @@ def display(task, name, scheduler = None, display_cs = None, sd_cs = None, spi =
                 #    lcd.line(127, 0, 127, 2, 1)
                 #elif scheduler.keyboard.mode == "CP":
                 #    lcd.line(127, 3, 127, 5, 1)
+                if "tiles" in msg.content:
+                    refresh = True
+                    offset_x = msg.content["tiles"]["offset_x"]
+                    offset_y = msg.content["tiles"]["offset_y"]
+                    width = msg.content["tiles"]["width"]
+                    height = msg.content["tiles"]["height"]
+                    size_w = msg.content["tiles"]["size_w"]
+                    size_h = msg.content["tiles"]["size_h"]
+                    data = msg.content["tiles"]["data"]
+                    for w in range(width):
+                        x = w * size_w + offset_x
+                        for h in range(height):
+                            y = h * size_h + offset_y
+                            tile_wri.print_tile_id(data[h][w], x, y)
+                if "objects" in msg.content:
+                    refresh = True
+                    for o in msg.content["objects"]:
+                        tile_wri.print_tile_id(o["id"], o["x"], o["y"])
                 if "bricks" in msg.content:
                     refresh = True
                     offset_x = msg.content["bricks"]["offset_x"]
@@ -181,14 +237,28 @@ def display(task, name, scheduler = None, display_cs = None, sd_cs = None, spi =
                     height = msg.content["bricks"]["height"]
                     brick_size = msg.content["bricks"]["size"]
                     data = msg.content["bricks"]["data"]
-                    for w in range(width):
-                        x = w * brick_size + offset_x
-                        for h in range(height):
-                            y = h * brick_size + offset_y
-                            if data[h][w] == "o":
-                                lcd.rect(x, y, brick_size, brick_size, 0)
-                            elif data[h][w] == "x":
-                                lcd.rect(x, y, brick_size, brick_size, 1)
+                    if brick_size == 6:
+                        for w in range(width):
+                            x = w * brick_size + offset_x
+                            for h in range(height):
+                                y = h * brick_size + offset_y
+                                if data[h][w] == "o":
+                                    # lcd.rect(x, y, brick_size, brick_size, 0)
+                                    tile_wri.print_tile_id(60, x, y)
+                                elif data[h][w] == "x":
+                                    # lcd.rect(x, y, brick_size, brick_size, 1)
+                                    tile_wri.print_tile_id(61, x, y)
+                    elif brick_size == 4:
+                        for w in range(width):
+                            x = w * brick_size + offset_x
+                            for h in range(height):
+                                y = h * brick_size + offset_y
+                                if data[h][w] == "o":
+                                    # lcd.rect(x, y, brick_size, brick_size, 0)
+                                    tile_wri.print_tile_id(40, x, y)
+                                elif data[h][w] == "x":
+                                    # lcd.rect(x, y, brick_size, brick_size, 1)
+                                    tile_wri.print_tile_id(41, x, y)
                 if "texts" in msg.content:
                     refresh = True
                     for text in msg.content["texts"]:
@@ -201,6 +271,11 @@ def display(task, name, scheduler = None, display_cs = None, sd_cs = None, spi =
                         #wri.printstring(c, 0)
                         Writer.set_textpos(lcd, y, x)
                         wri.printstring(s, 0)
+                if "lines" in msg.content:
+                    refresh = True
+                    for line in msg.content["lines"]:
+                        xs, ys, xe, ye, invert_color = line
+                        lcd.line(xs, ys, xe, ye, 1 if invert_color else 0)
                 if "rects" in msg.content:
                     refresh = True
                     for rect in msg.content["rects"]:
@@ -343,7 +418,7 @@ def shell(task, name, scheduler = None, display_id = None, storage_id = None):
     yield Condition.get().load(sleep = 1000)
     #s = Shell()
     s = Shell(display_size = (41, 18), cache_size = (-1, 50), history_length = 50, scheduler = scheduler, storage_id = storage_id, display_id = display_id)
-    s.write_line(" Welcome to TinyShell")
+    s.write_line("           Welcome to TinyShell")
     s.write_char("\n")
     yield Condition.get().load(sleep = 0, send_msgs = [Message.get().load({"frame": s.get_display_frame()}, receiver = display_id)])
     cursor_id = scheduler.add_task(Task.get().load(cursor, "cursor", kwargs = {"interval": 500, "s": s, "display_id": display_id, "storage_id": storage_id}))
@@ -465,9 +540,10 @@ def sound_output(task, name, scheduler = None, sound_pwm = None):
         tone_freq = msg.content["freq"]
         tone_length = msg.content["length"]
         tone_volume = msg.content["volume"]
-        sound_pwm.freq(tone_freq)
-        sound_pwm.duty_u16(tone_volume)
-        if tone_length < 100:
+        if tone_freq >= 20:
+            sound_pwm.freq(tone_freq)
+            sound_pwm.duty_u16(tone_volume)
+        if tone_length < 10:
             sleep_ms(tone_length)
         else:
             yield Condition.get().load(sleep = tone_length)
