@@ -381,6 +381,7 @@ if __name__ == "__main__":
         s.sound_id = sound_id
         shell_id = s.add_task(Task.get().load(shell, "shell", condition = Condition.get(), kwargs = {"scheduler": s, "display_id": display_id, "storage_id": storage_id}))
         s.shell_id = shell_id
+        s.set_log_to(shell_id)
         keyboard_id = s.add_task(Task.get().load(keyboard_input, "keyboard_input", condition = Condition.get(), kwargs = {"scheduler": s, "interval": 10, "shell_id": shell_id, "display_id": display_id}))
         #display_id = None
         monitor_id = s.add_task(Task.get().load(monitor, "monitor", condition = Condition.get(), kwargs = {"scheduler": s, "display_id": display_id}))

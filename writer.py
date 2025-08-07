@@ -69,11 +69,11 @@ class Writer():
         if self.devid not in Writer.state:
             Writer.state[self.devid] = DisplayState()
         self.font = font
-        if font.height() >= device.height or font.max_width() >= device.width:
+        if font.height >= device.height or font.max_width >= device.width:
             raise ValueError('Font too large for screen')
         # Allow to work with reverse or normal font mapping
-        if font.hmap():
-            self.map = framebuf.MONO_HMSB if font.reverse() else framebuf.MONO_HLSB
+        if font.hmap:
+            self.map = framebuf.MONO_HMSB if font.reverse else framebuf.MONO_HLSB
         else:
             raise ValueError('Font must be horizontally mapped.')
         if verbose:
@@ -101,7 +101,7 @@ class Writer():
 
     def _newline(self):
         s = self._getstate()
-        height = self.font.height()
+        height = self.font.height
         s.text_row += height
         s.text_col = 0
         margin = self.screenheight - (s.text_row + height)
@@ -123,7 +123,7 @@ class Writer():
 
     @property
     def height(self):  # Property for consistency with device
-        return self.font.height()
+        return self.font.height
     
     def clear_line(self, length, invert=False):
         self._get_char(" ", True)
@@ -144,7 +144,7 @@ class Writer():
         del fbc
 
     def clear_frame(self, rows, cols, invert=False):
-        height = self.font.height()
+        height = self.font.height
         self._get_char(" ", True)
         if " " not in Writer.chars:
             buf = bytearray(self.glyph)
@@ -163,7 +163,7 @@ class Writer():
 
     def printframe(self, rows, invert=False):
         self.char_map.clear()
-        height = self.font.height()
+        height = self.font.height
         for r, row in enumerate(rows):
             for p, char in enumerate(row):
                 if char not in self.char_map:
