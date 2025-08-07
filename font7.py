@@ -120,6 +120,13 @@ chars = {}
 for c in all_chars:
     chars[c] = get_char(c)
     #charslist[ord(c)] = get_char(c)
+del all_chars
+del get_char
+del _font
+del _index
+del _mvfont
+del _mvi
+del ifb
 
 def get_ch(ch):
     return chars[ch]
