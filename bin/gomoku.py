@@ -26,8 +26,8 @@ class Game(object):
         self.think_games = think_games
         self.think_use_time = 0
         self.mode = mode
-        self.cx = 0
-        self.cy = 0
+        self.cx = 7
+        self.cy = 7
         self.think = {self.black: 0, self.white: 0, self.empty: 0}
         self.stats = {self.black: 0, self.white: 0, self.empty: 0}
         self.g = None
@@ -93,22 +93,6 @@ class Game(object):
             if count >= 5:
                 return color
         return self.empty
-
-
-
-        # for xx in range(max(0, x - 4), min(x + 1, 11)):
-        #     if self.is_line5(self.table[y][xx], self.table[y][xx + 1], self.table[y][xx + 2], self.table[y][xx + 3], self.table[y][xx + 4]):
-        #         return self.table[y][xx]
-        # if y <= 10 and self.is_line5(self.table[y][x], self.table[y + 1][x], self.table[y + 2][x], self.table[y + 3][x], self.table[y + 4][x]):
-        #     return self.table[y][x]
-        # for d in range(5):
-        #     if x - d >= 0 and x - d + 4 <= 14 and y - d >= 0 and y - d + 4 <= 14:
-        #         if self.is_line5(self.table[y - d][x - d], self.table[y - d + 1][x - d + 1], self.table[y - d + 2][x - d + 2], self.table[y - d + 3][x - d + 3], self.table[y - d + 4][x - d + 4]):
-        #             return self.table[y - d][x - d]
-        #     if x - d >= 0 and x - d + 4 <= 14 and y + d <= 14 and y + d - 4 >= 0:
-        #         if self.is_line5(self.table[y + d][x - d], self.table[y + d - 1][x - d + 1], self.table[y + d - 2][x - d + 2], self.table[y + d - 3][x - d + 3], self.table[y + d - 4][x - d + 4]):
-        #             return self.table[y + d][x - d]
-        # return self.empty
 
     def turn_place_disc(self, x, y):
         if self.place_disc(x, y, self.turn):
@@ -234,34 +218,6 @@ class Game(object):
             return 7, 7
         elif self.discs_counter < 2:
             return self.near_first_disc()
-        # move_values = [
-        #     ["XXXXX", 100000],
-        #     ["XXXX ", 25000],
-        #     [" XXXX", 25000],
-        #     ["XX XX", 25000],
-        #     ["X XXX", 25000],
-        #     ["XXX X", 25000],
-        #     [" XXX ", 5000],
-        #     ["XXX  ", 5000],
-        #     ["  XXX", 5000],
-        #     ["XX X ", 5000],
-        #     [" XX X", 5000],
-        #     ["X XX ", 5000],
-        #     [" X XX", 5000],
-        #     ["XX  X", 5000],
-        #     ["X  XX", 5000],
-        #     ["X X X", 5000],
-        #     ["   XX", 1000],
-        #     ["  XX ", 1000],
-        #     [" XX  ", 1000],
-        #     ["XX   ", 1000],
-        #     ["X   X", 1000],
-        #     ["X X  ", 1000],
-        #     [" X X ", 1000],
-        #     ["  X X", 1000],
-        #     ["X  X ", 1000],
-        #     [" X  X", 1000],
-        # ]
         moves = [[] for i in range(10)]
         scores = [-1 for i in range(10)]
         max_score = -1
@@ -307,7 +263,7 @@ class Game(object):
                     while not self.g.over:
                         self.g.turn_random_place_disc()
                     stats[i][self.g.win] += 1
-                if stats[i][self.turn] > max_win: # or (stats[x][self.turn] == max_win and stats[x][self.empty] > stats[best_x][self.empty]):
+                if stats[i][self.turn] > max_win:
                     max_win = stats[i][self.turn]
                     best_x = x
                     best_y = y
