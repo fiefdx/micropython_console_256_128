@@ -1,5 +1,6 @@
 import gc
 import sys
+from io import StringIO
 
 from common import ticks_ms, ticks_add, ticks_diff, sleep_ms
 
@@ -28,18 +29,14 @@ class Message(object):
         return n
 
     def __init__(self, content, sender = None, sender_name = "", receiver = None, processed = False):
+        self.load(content, sender, sender_name, receiver, processed)
+
+    def load(self, content, sender = None, sender_name = "", receiver = None, processed = False):
         self.content = content
         self.sender = sender
         self.sender_name = sender_name
         self.receiver = receiver
         self.processed = processed
-
-    def load(self, content, sender = None, sender_name = "", receiver = None):
-        self.content = content
-        self.sender = sender
-        self.sender_name = sender_name
-        self.receiver = receiver
-        self.processed = False
         return self
 
     def release(self):
@@ -78,18 +75,14 @@ class Condition(object):
         return n
     
     def __init__(self, code = 0, sleep = 0, send_msgs = [], wait_msg = False, processed = False):
+        self.load(code, sleep, send_msgs, wait_msg, processed)
+        
+    def load(self, code = 0, sleep = 0, send_msgs = [], wait_msg = False, processed = False):
         self.code = code
         self.resume_at = ticks_add(ticks_ms(), sleep) # ms
         self.send_msgs = send_msgs
         self.wait_msg = wait_msg
         self.processed = processed
-        
-    def load(self, code = 0, sleep = 0, send_msgs = [], wait_msg = False):
-        self.code = code
-        self.resume_at = ticks_add(ticks_ms(), sleep) # ms
-        self.send_msgs = send_msgs
-        self.wait_msg = wait_msg
-        self.processed = False
         return self
     
     def release(self):
@@ -130,16 +123,7 @@ class Task(object):
         return cls.id_count
     
     def __init__(self, func, name, condition = None, task_id = None, args = [], kwargs = {}, need_to_clean = [], processed = False):
-        self.id = Task.new_id()
-        if task_id:
-            self.id = task_id
-        self.name = name
-        self.msgs = []
-        self.msgs_senders = []
-        self.func = func(self, name, *args, **kwargs) if func else None
-        self.condition = condition
-        self.need_to_clean = need_to_clean
-        self.processed = processed
+        self.load(func, name, condition, task_id, args, kwargs, need_to_clean, processed)
 
     def load(self, func, name, condition = Condition(), task_id = None, args = [], kwargs = {}, need_to_clean = [], processed = False):
         self.id = Task.new_id()
@@ -151,7 +135,7 @@ class Task(object):
         self.func = func(self, name, *args, **kwargs) if func else None
         self.condition = condition
         self.need_to_clean = need_to_clean
-        self.processed = False
+        self.processed = processed
         return self
         
     def set_condition(self, condition):
@@ -256,7 +240,7 @@ class Scheluder(object):
     
     def log(self, content):
         if self.log_to:
-            self.tasks_ids[self.log_to].put_message(Message.get().load(content, sender = 0, sender_name = self.name))
+            self.tasks_ids[self.log_to].put_message(Message.get().load({"output": content}, sender = 0, sender_name = self.name))
         else:
             print(content)
 
@@ -304,7 +288,9 @@ class Scheluder(object):
                                         del sys.modules[m_name]
                                         gc.collect()
                                     except Exception as e:
-                                        self.log("task: %s: %s" % (self.current.name, sys.print_exception(e)))
+                                        buf = StringIO()
+                                        sys.print_exception(e, buf)
+                                        self.log("task: %s\n%s" % (self.current.name, buf.getvalue()))
                                 self.current.clean()
                                 # del self.current
                                 self.current = None
@@ -314,7 +300,9 @@ class Scheluder(object):
                                     # del self.current
                                 self.current = None
                             except Exception as e:
-                                self.log("task: %s: %s" % (self.current.name, sys.print_exception(e)))
+                                buf = StringIO()
+                                sys.print_exception(e, buf)
+                                self.log("task: %s\n%s" % (self.current.name, buf.getvalue()))
                                 if self.current:
                                     self.current.clean()
                                     # del self.current
