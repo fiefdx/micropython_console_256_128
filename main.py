@@ -526,17 +526,6 @@ def sound_output(task, name, scheduler = None, sound_pwm = None):
         msg.release()
 
 
-# def core1_thread(scheduler):
-#     scheduler.run()
-#     print("core1: exit")
-# 
-# 
-# def run_core1(task, name, scheduler = None, start_after = 5000, display_id = None):
-#     yield Condition.get().load(sleep = start_after)
-#     thread.start_new_thread(core1_thread, (scheduler,))
-#     yield Condition.get().load(send_msgs = [Message.get().load({"msg": "start core1"}, receiver = display_id)])
-
-
 if __name__ == "__main__":
     try:
         led = machine.Pin("LED", machine.Pin.OUT)
