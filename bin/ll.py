@@ -54,7 +54,7 @@ def main(*args, **kwargs):
                 if s[0] == 16384:
                     line = format_string % (f + " " * (max_length - 11 - len(f)), "D", "   0.00B")
                     n += 1
-                    if n % page_size == 0:
+                    if n == page_size:
                         n = 0
                         yield Condition.get().load(sleep = 0, wait_msg = True, send_msgs = [
                             Message.get().load({"output_part": line}, receiver = shell_id)
@@ -82,7 +82,7 @@ def main(*args, **kwargs):
                     if s[0] == 32768:
                         line = format_string % (f + " " * (max_length - 11 - len(f)), "F", size)
                         n += 1
-                        if n % page_size == 0:
+                        if n == page_size:
                             n = 0
                             yield Condition.get().load(sleep = 0, wait_msg = True, send_msgs = [
                                 Message.get().load({"output_part": line}, receiver = shell_id)
