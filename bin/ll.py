@@ -109,11 +109,12 @@ def main(*args, **kwargs):
                 ])
                 line = "Total: %s, Dirs: %s, Files: %s" % (dirs_total + files_total, dirs_total, files_total)
                 yield Condition.get().load(sleep = 0, send_msgs = [
-                    Message.get().load({"output_part": line}, receiver = shell_id)
+                    Message.get().load({"output": line}, receiver = shell_id)
                 ])
-            yield Condition.get().load(sleep = 0, send_msgs = [
-                Message.get().load({"output": ""}, receiver = shell_id)
-            ])
+            else:
+                yield Condition.get().load(sleep = 0, send_msgs = [
+                    Message.get().load({"output": ""}, receiver = shell_id)
+                ])
         else:
             yield Condition.get().load(sleep = 0, send_msgs = [
                 Message.get().load({"output": result}, receiver = shell_id)
