@@ -72,13 +72,14 @@ is destroyed.
 """
 
 import builtins
+from micropython import const
 
 __all__ = ["open", "openfp", "Error"]
 
 class Error(Exception):
     pass
 
-WAVE_FORMAT_PCM = 0x0001
+WAVE_FORMAT_PCM = const(0x0001)
 
 _array_fmts = None, 'b', 'h', None, 'i'
 

@@ -1,6 +1,7 @@
 import gc
 import sys
 from io import StringIO
+from micropython import const
 
 from common import ticks_ms, ticks_add, ticks_diff, sleep_ms
 
@@ -185,9 +186,9 @@ class Task(object):
 
 class Scheluder(object):
     def __init__(self, log_to = None, name = "scheduler", cpu = 0):
-        self.log_to = log_to
-        self.cpu = cpu
-        self.name = name
+        self.log_to = const(log_to)
+        self.cpu = const(cpu)
+        self.name = const(name)
         self.tasks = []
         self.tasks_ids = {}
         self.task_sort_at = 0
@@ -195,8 +196,8 @@ class Scheluder(object):
         self.sleep_ms = 0
         self.load_calc_at = ticks_ms()
         self.idle = 0
-        self.idle_sleep_interval = 0.1
-        self.task_sleep_interval = 0.1
+        self.idle_sleep_interval = const(0.1)
+        self.task_sleep_interval = const(0.1)
         self.need_to_sort = True
         self.stop = False
         

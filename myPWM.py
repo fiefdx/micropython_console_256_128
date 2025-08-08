@@ -1,4 +1,5 @@
 from machine import PWM,Pin,mem32
+from micropython import const
 
 
 class  myPWM(PWM):
@@ -7,26 +8,26 @@ class  myPWM(PWM):
         #gpio id is now GPIOx instead of x
         pinstr = str(pin).split(',')[0]
         if pinstr.upper().find('GPIO') >=0 :
-            self.id = int(pinstr[8:])
+            self.id = const(int(pinstr[8:]))
         else :
-            self.id = int(pinstr[4:])
-        self.A_B = self.id & 1
-        self.channel = self.id >> 1
-        self.divider = divider
-        self.top = top
+            self.id = const(int(pinstr[4:]))
+        self.A_B = const(self.id & 1)
+        self.channel = const(self.id >> 1)
+        self.divider = const(divider)
+        self.top = const(top)
         
         super().__init__(pin)
         super().freq(122_000)
 #         super().freq(244_000)
         super().duty_u16(32768)
         # set memory base
-        self.PWM_BASE = 0x4005_0000 + (self.channel * 0x14)
+        self.PWM_BASE = const(0x4005_0000 + (self.channel * 0x14))
         # set divider base
-        self.PWM_DIV = self.PWM_BASE + 4
+        self.PWM_DIV = const(self.PWM_BASE + 4)
         # set  top base
-        self.PWM_TOP = self.PWM_BASE + 16
+        self.PWM_TOP = const(self.PWM_BASE + 16)
         # set  cc base
-        self.PWM_CC = self.PWM_BASE + 12
+        self.PWM_CC = const(self.PWM_BASE + 12)
         
         #ok we want frequency around 60KHz and max top at 255
         # 125Mhz / (255 * 60000) => 8.1
@@ -36,9 +37,9 @@ class  myPWM(PWM):
         
         # set divider to 8
         #mem32[self.PWM_DIV] =  8 << 4
-        mem32[self.PWM_DIV] =  self.divider << 4
+        mem32[self.PWM_DIV] = const(self.divider << 4)
         # set top to 255
-        mem32[self.PWM_TOP] =  self.top
+        mem32[self.PWM_TOP] = const(self.top)
         self.duty(self.top // 2)
         
         

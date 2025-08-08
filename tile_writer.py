@@ -1,6 +1,7 @@
 import framebuf
 from uctypes import bytearray_at, addressof
 from sys import implementation
+from micropython import const
 
 from writer import _get_id
 from common import ticks_ms, ticks_add, ticks_diff, sleep_ms
@@ -12,11 +13,11 @@ class Writer(object):
     def __init__(self, device, tiles):
         self.devid = _get_id(device)
         self.device = device
-        self.map = framebuf.MONO_HLSB
-        self.screenwidth = device.width  # In pixels
-        self.screenheight = device.height
-        self.bgcolor = 0  # Monochrome background and foreground colors
-        self.fgcolor = 1
+        self.map = const(framebuf.MONO_HLSB)
+        self.screenwidth = const(device.width)  # In pixels
+        self.screenheight = const(device.height)
+        self.bgcolor = const(0)  # Monochrome background and foreground colors
+        self.fgcolor = const(1)
         self.tiles = tiles
 
     def print_tile(self, tile, tile_width, tile_height, offset_x, offset_y):

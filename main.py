@@ -18,6 +18,7 @@ try:
 except:
     print("no multi-threading module support")
 from machine import Pin, SPI, PWM
+from micropython import const
 
 # from basictoken import BASICToken as Token
 # from lexer import Lexer
@@ -72,47 +73,47 @@ def display(task, name, scheduler = None, display_cs = None, sd_cs = None, spi =
     spi.init(baudrate=62500000, polarity=1, phase=1)
     lcd = ST75256(256, 128, spi, Pin(1), Pin(6), display_cs, rot=0)
     contrast = 0x138
-    contrast_max = 0x150
-    contrast_min = 0x120
+    contrast_max = const(0x150)
+    contrast_min = const(0x120)
     lcd.contrast(contrast)
     frame_previous = None
-    clear_line = " " * 42
+    clear_line = const("                                          ")
     cursor_previous = None
     wri = Writer(lcd, font7)
     wri.wrap = False
-    tile61 = [
+    tile61 = (
         0b11111111,
         0b10000111,
         0b10110111,
         0b10110111,
         0b10000111,
         0b11111111,
-    ]
-    tile60 = [
+    )
+    tile60 = (
         0b00000011,
         0b00000011,
         0b00000011,
         0b00000011,
         0b00000011,
         0b00000011,
-    ]
-    tile41 = [
+    )
+    tile41 = (
         0b11111111,
         0b10011111,
         0b10011111,
         0b11111111,
-    ]
-    tile40 = [
+    )
+    tile40 = (
         0b00001111,
         0b00001111,
         0b00001111,
         0b00001111,
-    ]
+    )
     tiles = {
-        60: {"tile": tile60, "width": 6, "height": 6},
-        61: {"tile": tile61, "width": 6, "height": 6},
-        40: {"tile": tile40, "width": 4, "height": 4},
-        41: {"tile": tile41, "width": 4, "height": 4},
+        60: {"tile": tile60, "width": const(6), "height": const(6)},
+        61: {"tile": tile61, "width": const(6), "height": const(6)},
+        40: {"tile": tile40, "width": const(4), "height": const(4)},
+        41: {"tile": tile41, "width": const(4), "height": const(4)},
     }
     tile_wri = TileWriter(lcd, tiles)
     while True:
@@ -388,7 +389,6 @@ def storage(task, name, scheduler = None, display_cs = None, sd_cs = None, spi =
 
 def cursor(task, name, interval = 500, s = None, display_id = None, storage_id = None):
     flash = 0
-    n = 0
     enabled = True
     while True:
         msg = task.get_message()
@@ -473,38 +473,13 @@ def shell(task, name, scheduler = None, display_id = None, storage_id = None):
                 Message.get().load(msg.content, receiver = display_id)
             ])
         msg.release()
-
-
-def keyboard_input_test(task, name, interval = 50, shell_id = None):
-    yield Condition.get().load(sleep = 2000)
-    data = "ls\n"
-    i = 0
-    while True:
-        c = data[i]
-        yield Condition.get().load(sleep = 1000, send_msgs = [Message.get().load({"char": c}, receiver = shell_id)])
-        i += 1
-        if i >= len(data):
-            i = 0
-            yield Condition.get().load(sleep = 10000)
-
-
-def display_backlight(task, name, interval = 500, display_id = None):
-    while True:
-        for duty_cycle in range(0, 65536, 6553):
-            display_pwm.duty_u16(duty_cycle)
-            print("duty_cycle: ", duty_cycle)
-            yield Condition.get().load(sleep = interval)
-        for duty_cycle in range(65536, 0, -6553):
-            display_pwm.duty_u16(duty_cycle)
-            yield Condition.get().load(sleep = interval)
-            print("duty_cycle: ", duty_cycle)
             
             
 def keyboard_input(task, name, scheduler = None, interval = 50, shell_id = None, display_id = None):
     k = KeyBoard()
     scheduler.keyboard = k
     keyboard_mode = k.mode
-    key_sound = 2000
+    key_sound = const(2000)
     while True:
         yield Condition.get().load(sleep = interval)
         key = k.scan()
@@ -551,25 +526,15 @@ def sound_output(task, name, scheduler = None, sound_pwm = None):
         msg.release()
 
 
-def counter(task, name, interval = 100, display_id = None):
-    n = 0
-    while True:
-        if n % 100 == 0:
-            yield Condition.get().load(sleep = interval, send_msgs = [Message.get().load({"msg": "counter: %06d" % n}, receiver = display_id)])
-        else:
-            yield Condition.get().load(sleep = interval)
-        n += 1
-
-
-def core1_thread(scheduler):
-    scheduler.run()
-    print("core1: exit")
-
-
-def run_core1(task, name, scheduler = None, start_after = 5000, display_id = None):
-    yield Condition.get().load(sleep = start_after)
-    thread.start_new_thread(core1_thread, (scheduler,))
-    yield Condition.get().load(send_msgs = [Message.get().load({"msg": "start core1"}, receiver = display_id)])
+# def core1_thread(scheduler):
+#     scheduler.run()
+#     print("core1: exit")
+# 
+# 
+# def run_core1(task, name, scheduler = None, start_after = 5000, display_id = None):
+#     yield Condition.get().load(sleep = start_after)
+#     thread.start_new_thread(core1_thread, (scheduler,))
+#     yield Condition.get().load(send_msgs = [Message.get().load({"msg": "start core1"}, receiver = display_id)])
 
 
 if __name__ == "__main__":
@@ -604,3 +569,4 @@ if __name__ == "__main__":
         import sys
         print("main exit: %s" % sys.print_exception(e))
     print("core0 exit")
+

@@ -3,6 +3,7 @@
 from machine import Pin, I2C, reset
 import time
 import binascii
+from micropython import const
 
 from ntp import get_ntp_time
 
@@ -10,21 +11,21 @@ from ntp import get_ntp_time
 #    it should solder the R3 with 0R resistor if want to use alarm function,please refer to the Sch file on waveshare Pico-RTC-DS3231 wiki
 #    https://www.waveshare.net/w/upload/0/08/Pico-RTC-DS3231_Sch.pdf
 
-ALARM_PIN = 3
+ALARM_PIN = const(3)
 
 
 class ds3231(object):
     #            13:45:00 Mon 24 May 2021
     #  the register value is the binary-coded decimal (BCD) format
     #               sec min hour week day month year
-    NowTime = b'\x00\x45\x13\x02\x24\x05\x21'
+    NowTime = const(b'\x00\x45\x13\x02\x24\x05\x21')
     #w  = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]
-    w  = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]
-    address = 0x68
-    start_reg = 0x00
-    alarm1_reg = 0x07
-    control_reg = 0x0e
-    status_reg = 0x0f
+    w  = ("Sun","Mon","Tue","Wed","Thu","Fri","Sat")
+    address = const(0x68)
+    start_reg = const(0x00)
+    alarm1_reg = const(0x07)
+    control_reg = const(0x0e)
+    status_reg = const(0x0f)
         
     def __init__(self, i2c):
         self.bus = i2c
@@ -86,7 +87,7 @@ class ds3231(object):
         #d |= 1 << 5
         #d |= 1 << 3
         #d &= 0 << 2
-        d = 0b01001000
+        d = const(0b01001000)
         self.bus.writeto_mem(0x57, 0x02, bytearray([d]))
 
     def reboot(self):

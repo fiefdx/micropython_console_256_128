@@ -1,6 +1,7 @@
 import os
 import uos
 import time
+from micropython import const
 platform = "circuitpython"
 supervisor = None
 try:

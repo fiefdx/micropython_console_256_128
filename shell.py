@@ -1,6 +1,7 @@
 import sys
 import uos
 from math import ceil
+from micropython import const
 
 # from listfile import ListFile
 from scheduler import Condition, Task, Message
@@ -9,21 +10,21 @@ from common import exists, path_join, isfile, isdir
 
 class Shell(object):
     def __init__(self, display_size = (20, 8), cache_size = (-1, 50), history_length = 100, prompt_c = ">", scheduler = None, display_id = None, storage_id = None, history_file_path = "/.history", bin_path = "/bin"):
-        self.display_width = display_size[0]
-        self.display_height = display_size[1]
-        self.display_width_with_prompt = display_size[0] + len(prompt_c)
-        self.history_length = history_length
-        self.prompt_c = prompt_c
+        self.display_width = const(display_size[0])
+        self.display_height = const(display_size[1])
+        self.display_width_with_prompt = const(display_size[0] + len(prompt_c))
+        self.history_length = const(history_length)
+        self.prompt_c = const(prompt_c)
         self.history = [] # ListFile("./shell_history_cache.json", shrink_threshold = 10240) # 86.86k free for [], 88.05k for ListFile
-        self.cache_width = cache_size[0]
-        self.cache_lines = cache_size[1]
+        self.cache_width = const(cache_size[0])
+        self.cache_lines = const(cache_size[1])
         self.cache = [] # ListFile("./shell_cache.json", shrink_threshold = 10240)
         self.cursor_color = 1
         self.current_row = 0
         self.current_col = 0
         self.scheduler = scheduler
-        self.display_id = display_id
-        self.storage_id = storage_id
+        self.display_id = const(display_id)
+        self.storage_id = const(storage_id)
         self.cursor_row = 0
         self.cursor_col = 0
         self.cursor_id = None
@@ -34,8 +35,8 @@ class Shell(object):
         self.disable_output = False
         self.current_shell = None
         self.enable_cursor = True
-        self.history_file_path = history_file_path
-        self.bin_path = bin_path
+        self.history_file_path = const(history_file_path)
+        self.bin_path = const(bin_path)
         self.load_history()
         #from bin import ls, pwd, cd, mkdir, cp, rm, touch, echo, cat, ifconfig, connect, disconnect, reconnect, scan, read, help
         #from bin import top, python, clear, learn, reset, edit, editold, readpages, rename, bricks, tank, badapple, umount, mount, date, stats

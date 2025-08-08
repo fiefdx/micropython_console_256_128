@@ -18,23 +18,23 @@ try:
 except:
     print("no multi-threading module support")
 from machine import Pin, SPI, PWM
+from micropython import const
 
 # for pybasic
 from basictoken import BASICToken as Token
-from lexer import Lexer
-from program import Program
+# from lexer import Lexer
+# from program import Program
 
 from ST75256 import ST75256
 import sdcard
 # import font8
-import font7
+import font7_slow as font7
 # import font6
 from writer import Writer
 from scheduler import Scheluder, Condition, Task, Message
 from common import ticks_ms, ticks_add, ticks_diff, sleep_ms
-from basic_shell import BasicShell
+from basic_shell_alone import BasicShell
 from keyboard import KeyBoard
-sys.path.append("/")
 
 if machine:
     machine.freq(240000000)
@@ -70,11 +70,11 @@ def display(task, name, scheduler = None, display_cs = None, sd_cs = None, spi =
     spi.init(baudrate=62500000, polarity=1, phase=1)
     lcd = ST75256(256, 128, spi, Pin(1), Pin(6), display_cs, rot=0)
     contrast = 0x138
-    contrast_max = 0x150
-    contrast_min = 0x120
+    contrast_max = const(0x150)
+    contrast_min = const(0x120)
     lcd.contrast(contrast)
     frame_previous = None
-    clear_line = " " * 42
+    clear_line = const("                                          ")
     cursor_previous = None
     wri = Writer(lcd, font7)
     wri.wrap = False
@@ -86,7 +86,7 @@ def display(task, name, scheduler = None, display_cs = None, sd_cs = None, spi =
         #spi.init(baudrate=1000000, polarity=1, phase=1)
         # time.sleep_ms(1)
         refresh = False
-        t = ticks_ms()
+        #t = ticks_ms()
         #print(msg.content)
         if "contrast" in msg.content:
             if msg.content["contrast"] == "contrast-up":
@@ -196,7 +196,6 @@ def storage(task, name, scheduler = None, display_cs = None, sd_cs = None, spi =
 
 def cursor(task, name, interval = 500, s = None, display_id = None, storage_id = None):
     flash = 0
-    n = 0
     enabled = True
     while True:
         msg = task.get_message()
@@ -225,10 +224,10 @@ def cursor(task, name, interval = 500, s = None, display_id = None, storage_id =
 def shell(task, name, scheduler = None, display_id = None, storage_id = None):
     yield Condition.get().load(sleep = 1000)
     #s = Shell()
-    s = BasicShell(display_size = (41, 18), cache_size = (-1, 50), history_length = 50, scheduler = scheduler, storage_id = storage_id, display_id = display_id)
+    s = BasicShell(display_size = (41, 18), cache_size = (-1, 50), history_length = 20, scheduler = scheduler, storage_id = storage_id, display_id = display_id)
     # print = s.print
     Token.print = s.print
-    s.write_line(" Welcome to PyBASIC")
+    s.write_line("            Welcome to PyBASIC")
     s.write_char("\n")
     yield Condition.get().load(sleep = 0, send_msgs = [Message.get().load({"frame": s.get_display_frame()}, receiver = display_id)])
     cursor_id = scheduler.add_task(Task.get().load(cursor, "cursor", kwargs = {"interval": 500, "s": s, "display_id": display_id, "storage_id": storage_id}))
@@ -303,25 +302,13 @@ def shell(task, name, scheduler = None, display_id = None, storage_id = None):
                 frame_previous = frame
             else:
                 yield Condition.get().load(sleep = 0, wait_msg = False)
-
-
-def display_backlight(task, name, interval = 500, display_id = None):
-    while True:
-        for duty_cycle in range(0, 65536, 6553):
-            display_pwm.duty_u16(duty_cycle)
-            print("duty_cycle: ", duty_cycle)
-            yield Condition.get().load(sleep = interval)
-        for duty_cycle in range(65536, 0, -6553):
-            display_pwm.duty_u16(duty_cycle)
-            yield Condition.get().load(sleep = interval)
-            print("duty_cycle: ", duty_cycle)
             
             
 def keyboard_input(task, name, scheduler = None, interval = 50, shell_id = None, display_id = None):
     k = KeyBoard()
     scheduler.keyboard = k
     keyboard_mode = k.mode
-    key_sound = 2000
+    key_sound = const(2000)
     while True:
         yield Condition.get().load(sleep = interval)
         key = k.scan()
@@ -381,7 +368,6 @@ if __name__ == "__main__":
         s.sound_id = sound_id
         shell_id = s.add_task(Task.get().load(shell, "shell", condition = Condition.get(), kwargs = {"scheduler": s, "display_id": display_id, "storage_id": storage_id}))
         s.shell_id = shell_id
-        s.set_log_to(shell_id)
         keyboard_id = s.add_task(Task.get().load(keyboard_input, "keyboard_input", condition = Condition.get(), kwargs = {"scheduler": s, "interval": 10, "shell_id": shell_id, "display_id": display_id}))
         #display_id = None
         monitor_id = s.add_task(Task.get().load(monitor, "monitor", condition = Condition.get(), kwargs = {"scheduler": s, "display_id": display_id}))
@@ -392,4 +378,3 @@ if __name__ == "__main__":
         import sys
         print("main exit: %s" % sys.print_exception(e))
     print("core0 exit")
-

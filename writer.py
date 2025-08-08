@@ -24,6 +24,7 @@
 import framebuf
 from uctypes import bytearray_at, addressof
 from sys import implementation
+from micropython import const
 
 from common import ticks_ms, ticks_add, ticks_diff, sleep_ms
 
@@ -80,15 +81,15 @@ class Writer():
             fstr = 'Orientation: Horizontal. Reversal: {}. Width: {}. Height: {}.'
             #print(fstr.format(font.reverse(), device.width, device.height))
             #print('Start row = {} col = {}'.format(self._getstate().text_row, self._getstate().text_col))
-        self.screenwidth = device.width  # In pixels
-        self.screenheight = device.height
-        self.bgcolor = 0  # Monochrome background and foreground colors
-        self.fgcolor = 1
-        self.row_clip = False  # Clip or scroll when screen fullt
-        self.col_clip = False  # Clip or new line when row is full
-        self.wrap = True  # Word wrap
-        self.cpos = 0
-        self.tab = 4
+        self.screenwidth = const(device.width)  # In pixels
+        self.screenheight = const(device.height)
+        self.bgcolor = const(0)  # Monochrome background and foreground colors
+        self.fgcolor = const(1)
+        self.row_clip = const(False)  # Clip or scroll when screen fullt
+        self.col_clip = const(False)  # Clip or new line when row is full
+        self.wrap = const(True)  # Word wrap
+        self.cpos = const(0)
+        self.tab = const(4)
 
         self.glyph = None  # Current char
         self.char_height = 0

@@ -1,25 +1,26 @@
 from machine import mem32
 import uctypes
+from micropython import const
 
 
 class myDMA:
     
     def __init__(self, channel,timer=None, clock_MUL=None, clock_DIV=None):
-        self.channel = channel
+        self.channel = const(channel)
         self.timer = timer
-        self.DMA_BASE = 0x50000000
-        self.DMA_CH_BASE = self.DMA_BASE + (0x40 * channel)
-        self.READ_ADDR = self.DMA_CH_BASE + 0
-        self.WRITE_ADDR = self.DMA_CH_BASE + 4 
-        self.TRANS_COUNT = self.DMA_CH_BASE + 8
-        self.ALIAS_TRANS_COUNT = self.DMA_CH_BASE + 0x1C
-        self.CTRL_TRIG = self.DMA_CH_BASE + 12
-        self.MULTI_TRIG = self.DMA_BASE + 0x430
-        self.CHAIN_ABORT = self.DMA_BASE + 0x444
-        self.ALIAS_CTRL  = self.DMA_CH_BASE + 0x10
+        self.DMA_BASE = const(0x50000000)
+        self.DMA_CH_BASE = const(self.DMA_BASE + (0x40 * channel))
+        self.READ_ADDR = const(self.DMA_CH_BASE + 0)
+        self.WRITE_ADDR = const(self.DMA_CH_BASE + 4)
+        self.TRANS_COUNT = const(self.DMA_CH_BASE + 8)
+        self.ALIAS_TRANS_COUNT = const(self.DMA_CH_BASE + 0x1C)
+        self.CTRL_TRIG = const(self.DMA_CH_BASE + 12)
+        self.MULTI_TRIG = const(self.DMA_BASE + 0x430)
+        self.CHAIN_ABORT = const(self.DMA_BASE + 0x444)
+        self.ALIAS_CTRL  = const(self.DMA_CH_BASE + 0x10)
         self.timer_channel = timer
-        self.clock_MUL= clock_MUL
-        self.clock_DIV = clock_DIV
+        self.clock_MUL= const(clock_MUL)
+        self.clock_DIV = const(clock_DIV)
 
         if self.timer_channel is None:
             self.TIMER = None
