@@ -1,5 +1,6 @@
 import sys
 import uos
+from io import StringIO
 
 from wavePlayer import wavePlayer
 
@@ -21,5 +22,7 @@ def main(*args, **kwargs):
                 result = player.play(path, k)
     except Exception as e:
         player.stop()
-        result = sys.print_exception(e)
+        buf = StringIO()
+        sys.print_exception(e, buf)
+        result = buf.getvalue()
     return result
