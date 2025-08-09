@@ -29,6 +29,7 @@ from lexer import Lexer
 
 from scheduler import Scheluder, Condition, Task, Message
 from dictfile import DictFile, DictFileSlow
+from common import ticks_ms, ticks_add, ticks_diff, sleep_ms
 
 
 class BASICData:
@@ -331,6 +332,7 @@ class Program:
         frame_previous = frame
         n = 0
         stop = False
+        s = ticks_ms()
         
         if len(line_numbers) > 0:
             # Set up an index into the ordered list
@@ -357,10 +359,10 @@ class Program:
                 frame = shell.input_counter
                 if frame != frame_previous:
                     frame_previous = frame
-                    n = 0
+                    s = ticks_ms()
                     yield Condition.get().load(sleep = 0)
-                elif n >= 10:
-                    n = 0
+                elif ticks_diff(ticks_ms(), s) >= 250:
+                    s = ticks_ms()
                     yield Condition.get().load(sleep = 0)
                 
                 flowsignal = self.__execute(self.get_next_line_number(), execute_print)
