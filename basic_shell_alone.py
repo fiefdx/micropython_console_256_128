@@ -7,6 +7,7 @@ import machine
 from math import ceil
 from io import StringIO
 from machine import Pin, I2C
+from micropython import const
 
 from basictoken import BASICToken as Token
 from lexer import Lexer
@@ -21,21 +22,21 @@ from ds3231 import ds3231
 
 class BasicShell(object):
     def __init__(self, display_size = (19, 9), cache_size = (-1, 50), history_length = 50, prompt_c = ">", scheduler = None, display_id = None, storage_id = None, history_file_path = "/.history_basic", bin_path = "/bin", ram = False):
-        self.display_width = display_size[0]
-        self.display_height = display_size[1]
-        self.display_width_with_prompt = display_size[0] + len(prompt_c)
-        self.history_length = history_length
-        self.prompt_c = prompt_c
+        self.display_width = const(display_size[0])
+        self.display_height = const(display_size[1])
+        self.display_width_with_prompt = const(display_size[0] + len(prompt_c))
+        self.history_length = const(history_length)
+        self.prompt_c = const(prompt_c)
         self.history = []
-        self.cache_width = cache_size[0]
-        self.cache_lines = cache_size[1]
+        self.cache_width = const(cache_size[0])
+        self.cache_lines = const(cache_size[1])
         self.cache = []
         self.cursor_color = 1
         self.current_row = 0
         self.current_col = 0
         self.scheduler = scheduler
-        self.display_id = display_id
-        self.storage_id = storage_id
+        self.display_id = const(display_id)
+        self.storage_id = const(storage_id)
         self.cursor_row = 0
         self.cursor_col = 0
         self.history_idx = 0
@@ -45,8 +46,8 @@ class BasicShell(object):
         self.disable_output = False
         self.current_shell = None
         self.enable_cursor = True
-        self.history_file_path = history_file_path
-        self.bin_path = bin_path
+        self.history_file_path = const(history_file_path)
+        self.bin_path = const(bin_path)
         self.load_history()
         self.lexer = Lexer()
         Program.print = self.print
@@ -199,6 +200,7 @@ class BasicShell(object):
             cmd = self.cache[-1].strip()
             if cmd.startswith(self.prompt_c):
                 cmd = cmd[len(self.prompt_c):]
+            print(cmd)
             if len(cmd) > 0:
                 if cmd.lower() == "exit":
                     self.history.append(self.cache[-1][len(self.prompt_c):])
