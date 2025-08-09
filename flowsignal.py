@@ -30,6 +30,8 @@ return address need to be added to the return stack.
 0
 """
 
+from micropython import const
+
 
 class FlowSignal:
 
@@ -39,42 +41,42 @@ class FlowSignal:
     # of a GOTO or conditional branch. The
     # ftarget value should be the jump target, i.e.
     # the line number being jumped to
-    SIMPLE_JUMP        = 0
+    SIMPLE_JUMP        = const(0)
 
     # Indicates a subroutine call where the
     # return address must be the line number of the instruction
     # of the following the call.
     # The ftarget value should be the line number of the first line
     # of the subroutine
-    GOSUB              = 1
+    GOSUB              = const(1)
 
     # Indicates the start of a FOR loop where loop
     # variable has not reached the end value, and therefore the loop
     # must be repeated. There should be therefore be
     # no ftarget value associated with it
-    LOOP_BEGIN         = 2
+    LOOP_BEGIN         = const(2)
 
     # An indication from a processed NEXT statement that the loop is to
     # be repeated. Since the return address is already on the stack,
     # there does not need to be an ftarget value associated with the signal.
-    LOOP_REPEAT        = 3
+    LOOP_REPEAT        = const(3)
 
     # An indication from a FOR statement that the loop should be skipped because
     # loop variable has reached its end value. The ftarget should be
     # the loop variable to look for in the terminating NEXT statement
-    LOOP_SKIP          = 4
+    LOOP_SKIP          = const(4)
 
     # Indicates a subroutine return has been processed, where the return
     # address is on the return stack. There should be therefore
     # be no ftarget value specified
-    RETURN             = 5
+    RETURN             = const(5)
 
     # Indicates that execution should cease because a stop statement has
     # been processed. There should be therefore be no ftarget value specified
-    STOP               = 6
+    STOP               = const(6)
 
     # Indicates that a conditional result block should be executed
-    EXECUTE            = 7
+    EXECUTE            = const(7)
 
     def __init__(self, ftarget=None, ftype=SIMPLE_JUMP, floop_var=None):
         """Creates a new FlowSignal for a branch. If the jump
