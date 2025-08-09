@@ -64,6 +64,7 @@ class DictFileSlow(object):
     def __init__(self, path):
         self.path = path
         self.wf = open(self.path, "w")
+        self.rf = None
         self.index = {}
         
     def writejson(self, d):
@@ -86,7 +87,8 @@ class DictFileSlow(object):
     def __getitem__(self, key):
         if key in self.index:
             pos = self.index[key]
-            self.rf = open(self.path, "r")
+            if self.rf is None:
+                self.rf = open(self.path, "r")
             self.rf.seek(pos, 0)
             d = json.loads(self.rf.readline()[:-1])["d"]
             t = []
@@ -95,7 +97,6 @@ class DictFileSlow(object):
                     t.append(Token(dd["c"], dd["C"], dd["l"]))
             else:
                 t = Token(d["c"], d["C"], d["l"])
-            self.rf.close()
             return t
         else:
             return None
@@ -109,6 +110,9 @@ class DictFileSlow(object):
     def __setitem__(self, key, value):
         pos, length = self.writejson(value)
         self.index[key] = pos
+        if self.rf:
+            self.rf.close()
+        self.rf = None
         
     def clear(self):
         self.index.clear()
