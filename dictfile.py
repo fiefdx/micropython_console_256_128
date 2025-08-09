@@ -28,18 +28,24 @@ class DictFile(object):
         return len(self.index)
 
     def __getitem__(self, key):
-        pos, length = self.index[key]
-        self.rf = open(self.path, "r")
-        self.rf.seek(pos, 0)
-        d = json.loads(self.rf.read(length - 1))["d"]
-        t = []
-        if isinstance(d, list):
-            for dd in d:
-                t.append(Token(dd["c"], dd["C"], dd["l"]))
+        if key in self.index:
+            pos, length = self.index[key]
+            self.rf = open(self.path, "r")
+            self.rf.seek(pos, 0)
+            d = json.loads(self.rf.read(length - 1))["d"]
+            t = []
+            if isinstance(d, list):
+                for dd in d:
+                    t.append(Token(dd["c"], dd["C"], dd["l"]))
+            else:
+                t = Token(d["c"], d["C"], d["l"])
+            self.rf.close()
+            return t
         else:
-            t = Token(d["c"], d["C"], d["l"])
-        self.rf.close()
-        return t
+            return t
+
+    def __delitem__(self, key):
+        del self.index[key]
     
     def get(self, key):
         return self.__getitem__(key)
@@ -78,18 +84,24 @@ class DictFileSlow(object):
         return len(self.index)
 
     def __getitem__(self, key):
-        pos = self.index[key]
-        self.rf = open(self.path, "r")
-        self.rf.seek(pos, 0)
-        d = json.loads(self.rf.readline()[:-1])["d"]
-        t = []
-        if isinstance(d, list):
-            for dd in d:
-                t.append(Token(dd["c"], dd["C"], dd["l"]))
+        if key in self.index:
+            pos = self.index[key]
+            self.rf = open(self.path, "r")
+            self.rf.seek(pos, 0)
+            d = json.loads(self.rf.readline()[:-1])["d"]
+            t = []
+            if isinstance(d, list):
+                for dd in d:
+                    t.append(Token(dd["c"], dd["C"], dd["l"]))
+            else:
+                t = Token(d["c"], d["C"], d["l"])
+            self.rf.close()
+            return t
         else:
-            t = Token(d["c"], d["C"], d["l"])
-        self.rf.close()
-        return t
+            return None
+
+    def __delitem__(self, key):
+        del self.index[key]
     
     def get(self, key):
         return self.__getitem__(key)
