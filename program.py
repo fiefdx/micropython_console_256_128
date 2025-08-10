@@ -304,7 +304,7 @@ class Program:
         how to branch if necessary, None otherwise
 
         """
-        if line_number not in self.__program.keys():
+        if line_number not in self.__program:
             raise RuntimeError("Line number " + line_number +
                                " does not exist")
 
@@ -345,9 +345,9 @@ class Program:
 
             # Run through the program until the
             # has line number has been reached
+            gc_n = 0
             while not stop:
                 # execute_print("%s-%s-%s-%s" % (len(self.__program), len(self.__return_stack), len(self.__return_loop), len(self.__data.__datastmts)), end = '\n', terminated = True)
-                gc.collect()
                 msg = task.get_message()
                 if msg:
                     if msg.content["msg"] == "Ctrl-C":
@@ -363,8 +363,11 @@ class Program:
                     yield Condition.get().load(sleep = 0)
                 elif ticks_diff(ticks_ms(), s) >= 250:
                     s = ticks_ms()
+                    gc_n += 1
+                    if gc_n >= 2:
+                        gc_n = 0
+                        gc.collect()
                     yield Condition.get().load(sleep = 0)
-                
                 flowsignal = self.__execute(self.get_next_line_number(), execute_print)
                 if flowsignal == "_wait":
                     shell.wait_for_input = True
@@ -532,7 +535,6 @@ class Program:
                         break
                 n += 1
                 #yield Condition(sleep = 0)
-
         else:
             shell.run_program_id = None
             execute_print("", end = "\n", terminated = True)
