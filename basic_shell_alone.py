@@ -21,7 +21,7 @@ from ds3231 import ds3231
 
 
 class BasicShell(object):
-    def __init__(self, display_size = (19, 9), cache_size = (-1, 50), history_length = 50, prompt_c = ">", scheduler = None, display_id = None, storage_id = None, history_file_path = "/.history_basic", bin_path = "/bin", ram = False):
+    def __init__(self, display_size = (19, 9), cache_size = (-1, 50), history_length = 50, prompt_c = ">", scheduler = None, display_id = None, storage_id = None, history_file_path = "/.history_basic", bin_path = "/bin", ram_path = "/.ram"):
         self.display_width = const(display_size[0])
         self.display_height = const(display_size[1])
         self.display_width_with_prompt = const(display_size[0] + len(prompt_c))
@@ -50,12 +50,16 @@ class BasicShell(object):
         self.bin_path = const(bin_path)
         self.load_history()
         self.lexer = Lexer()
+        self.ram_path = ram_path
+        self.ram = False
+        if exists(self.ram_path):
+            self.ram = True
+            self.prompt_c = "#"
         Program.print = self.print
-        self.program = Program(ram = ram)
+        self.program = Program(ram = self.ram)
         self.run_program_id = None
         self.wait_for_input = False
         self.input_start = None
-        self.ram = ram
         self.input_counter = 0
 
     def load_history(self):
@@ -97,9 +101,6 @@ class BasicShell(object):
         self.history_file.write(line)
         self.history_file.flush()
     
-    def help_commands(self):
-        return "ls\npwd\ncd\nmkdir\nrm\ncp\ntouch\necho\ncat\nifconfig\nconnect\ndisconnect\nreconnect\nscan\nread\ntop\npython\nclear\nlearn\nreset\nedit\neditold\nrename\nbricks\ntank\nbadapple\numount\nmount\ndate\nstats\nsound\nhelp"
-        
     def get_display_frame(self):
         # return self.cache[-self.display_height:]
         return self.cache_to_frame()[-self.display_height:]
@@ -200,7 +201,6 @@ class BasicShell(object):
             cmd = self.cache[-1].strip()
             if cmd.startswith(self.prompt_c):
                 cmd = cmd[len(self.prompt_c):]
-            print(cmd)
             if len(cmd) > 0:
                 if cmd.lower() == "exit":
                     self.history.append(self.cache[-1][len(self.prompt_c):])
@@ -245,6 +245,10 @@ class BasicShell(object):
                     self.history.append(self.cache[-1][len(self.prompt_c):])
                     self.write_history(self.cache[-1][len(self.prompt_c):])
                     self.print(self.free())
+                elif cmd.startswith("ram"):
+                    self.history.append(self.cache[-1][len(self.prompt_c):])
+                    self.write_history(self.cache[-1][len(self.prompt_c):])
+                    self.print(self.ram_switch())
                 elif cmd.startswith("reboot"):
                     self.history.append(self.cache[-1][len(self.prompt_c):])
                     self.write_history(self.cache[-1][len(self.prompt_c):])
@@ -398,6 +402,15 @@ class BasicShell(object):
             Task.remain(), len(Task.pool)
         )
         return message
+
+    def ram_switch(self):
+        if exists(self.ram_path):
+            uos.remove(self.ram_path)
+            return "disk mode after reboot"
+        else:
+            with open(self.ram_path, "w") as fp:
+                pass
+            return "ram mode after reboot"
 
     def ls(self, args = []):
         files = []
