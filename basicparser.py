@@ -136,6 +136,54 @@ class BASICParser:
         self.__file_handles = {}
         self.__wait = "_no_wait"
         self.__input_value = ""
+        self.__stmt_map = {
+            Token.FOR: self.__forstmt,
+            Token.IF: self.__ifstmt,
+            Token.NEXT: self.__nextstmt,
+            Token.ON: self.__ongosubstmt
+        }
+        self.__simplestmt_map = {
+            Token.NAME: self.__assignmentstmt,
+            Token.PRINT: self.__printstmt,
+            Token.LET: self.__letstmt,
+            Token.GOTO: self.__gotostmt,
+            Token.GOSUB: self.__gosubstmt,
+            Token.RETURN: self.__returnstmt,
+            Token.STOP: self.__stopstmt,
+            Token.DIM: self.__dimstmt,
+            Token.RANDOMIZE: self.__randomizestmt,
+            Token.DATA: self.__datastmt,
+            Token.READ: self.__readstmt,
+            Token.RESTORE: self.__restorestmt,
+            Token.OPEN: self.__openstmt,
+            Token.CLOSE: self.__closestmt,
+            Token.FSEEK: self.__fseekstmt,
+            Token.INPUT: self.__process_token_input,
+        }
+        self.__evaluate_math_function_map = {
+            Token.SQR: math.sqrt,
+            Token.ABS: abs,
+            Token.ATN: math.atan,
+            Token.COS: math.cos,
+            Token.EXP: math.exp,
+            Token.INT: math.floor,
+            Token.ROUND: round,
+            Token.LOG: math.log,
+            Token.SIN: math.sin,
+            Token.TAN: math.tan,
+            Token.CHR: chr,
+            Token.ASC: ord,
+            Token.STR: str,
+            Token.LEN: len,
+        }
+        self.__relexpr_map = {
+            Token.LESSER: lambda a, b: a < b,
+            Token.LESSEQUAL: lambda a, b: a <= b,
+            Token.GREATER: lambda a, b: a > b,
+            Token.GREATEQUAL: lambda a, b: a >= b,
+            Token.EQUAL: lambda a, b: a == b,
+            Token.NOTEQUAL: lambda a, b: a != b,
+        }
 
     def clear(self):
         keys = self.__symbol_table.keys()
@@ -263,12 +311,15 @@ class BASICParser:
         how to branch if necessary, None otherwise
 
         """
-        if self.__token.category in [Token.FOR, Token.IF, Token.NEXT,
-                                     Token.ON]:
-            return self.__compoundstmt()
+        return self.__stmt_map.get(self.__token.category, self.__simplestmt)()
 
+    def __process_token_input(self):
+        if self.__wait == "_no_wait":
+            self.__inputstmt_prompt()
+            return self.__wait
         else:
-            return self.__simplestmt()
+            self.__inputstmt_value()
+            return None
 
     def __simplestmt(self):
         """Parses a non-compound program statement
@@ -277,71 +328,8 @@ class BASICParser:
         how to branch if necessary, None otherwise
 
         """
-        if self.__token.category == Token.NAME:
-            self.__assignmentstmt()
-            return None
-
-        elif self.__token.category == Token.PRINT:
-            self.__printstmt()
-            return None
-
-        elif self.__token.category == Token.LET:
-            self.__letstmt()
-            return None
-
-        elif self.__token.category == Token.GOTO:
-            return self.__gotostmt()
-
-        elif self.__token.category == Token.GOSUB:
-            return self.__gosubstmt()
-
-        elif self.__token.category == Token.RETURN:
-            return self.__returnstmt()
-
-        elif self.__token.category == Token.STOP:
-            return self.__stopstmt()
-
-        elif self.__token.category == Token.INPUT:
-            if self.__wait == "_no_wait":
-                self.__inputstmt_prompt()
-                self.__wait = "_wait"
-                return self.__wait
-            else:
-                self.__inputstmt_value()
-                self.__wait = "_no_wait"
-                return None
-
-        elif self.__token.category == Token.DIM:
-            self.__dimstmt()
-            return None
-
-        elif self.__token.category == Token.RANDOMIZE:
-            self.__randomizestmt()
-            return None
-
-        elif self.__token.category == Token.DATA:
-            self.__datastmt()
-            return None
-
-        elif self.__token.category == Token.READ:
-            self.__readstmt()
-            return None
-
-        elif self.__token.category == Token.RESTORE:
-            self.__restorestmt()
-            return None
-
-        elif self.__token.category == Token.OPEN:
-            return self.__openstmt()
-
-        elif self.__token.category == Token.CLOSE:
-            self.__closestmt()
-            return None
-
-        elif self.__token.category == Token.FSEEK:
-            self.__fseekstmt()
-            return None
-
+        if self.__token.category in self.__simplestmt_map:
+            return self.__simplestmt_map[self.__token.category]()
         else:
             # Ignore comments, but raise an error
             # for anything else
@@ -828,6 +816,7 @@ class BASICParser:
 
         self.__prompt = prompt
         self.print(prompt)
+        self.__wait = "_wait"
                 
     def __inputstmt_value(self):
         """Parses an input statement, extracts the input
@@ -879,6 +868,7 @@ class BASICParser:
                     self.print('Not enough values input - redo from start')
                     break
         self.__prompt = ""
+        self.__wait = "_no_wait"
 
     def __inputstmt(self):
         """Parses an input statement, extracts the input
@@ -1224,27 +1214,6 @@ class BASICParser:
 
         return arrayval
 
-    def __compoundstmt(self):
-        """Parses compound statements,
-        specifically if-then-else and
-        loops
-
-        :return: The FlowSignal to indicate to the program
-        how to branch if necessary, None otherwise
-
-        """
-        if self.__token.category == Token.FOR:
-            return self.__forstmt()
-
-        elif self.__token.category == Token.NEXT:
-            return self.__nextstmt()
-
-        elif self.__token.category == Token.IF:
-            return self.__ifstmt()
-
-        elif self.__token.category == Token.ON:
-            return self.__ongosubstmt()
-
     def __ifstmt(self):
         """Parses if-then-else
         statements
@@ -1460,41 +1429,21 @@ class BASICParser:
         # assignment and equality, we need to check for this
         if self.__token.category == Token.ASSIGNOP:
             self.__token.category = Token.EQUAL
-
-        if self.__token.category in [Token.LESSER, Token.LESSEQUAL,
-                              Token.GREATER, Token.GREATEQUAL,
-                              Token.EQUAL, Token.NOTEQUAL]:
+        if self.__token.category in self.__relexpr_map:
             savecat = self.__token.category
             self.__advance()
             self.__expr()
 
             right = self.__operand_stack.pop()
             left = self.__operand_stack.pop()
-
-            if savecat == Token.EQUAL:
-                self.__operand_stack.append(left == right)  # Push True or False
-
-            elif savecat == Token.NOTEQUAL:
-                self.__operand_stack.append(left != right)  # Push True or False
-
-            elif savecat == Token.LESSER:
-                self.__operand_stack.append(left < right)  # Push True or False
-
-            elif savecat == Token.GREATER:
-                self.__operand_stack.append(left > right)  # Push True or False
-
-            elif savecat == Token.LESSEQUAL:
-                self.__operand_stack.append(left <= right)  # Push True or False
-
-            elif savecat == Token.GREATEQUAL:
-                self.__operand_stack.append(left >= right)  # Push True or False
+            self.__operand_stack.append(self.__relexpr_map[savecat](left, right))
 
     def __logexpr(self):
         """Parses a logical expression
         """
         self.__notexpr()
 
-        while self.__token.category in [Token.OR, Token.AND]:
+        while self.__token.category == Token.OR or self.__token.category == Token.AND:
             savecat = self.__token.category
             self.__advance()
             self.__notexpr()
@@ -1517,7 +1466,7 @@ class BASICParser:
             right = self.__operand_stack.pop()
             self.__operand_stack.append(not right)
         else:
-            self.__relexpr()
+            self.__relexpr()        
 
     def __evaluate_function(self, category):
         """Evaluate the function in the statement
@@ -1766,112 +1715,16 @@ class BASICParser:
 
         self.__consume(Token.RIGHTPAREN)
 
-        if category == Token.SQR:
+
+        if category in self.__evaluate_math_function_map:
             try:
-                return math.sqrt(value)
-
-            except ValueError:
-                raise ValueError("Invalid value supplied to SQR in line " +
-                                 str(self.__line_number))
-
-        elif category == Token.ABS:
-            try:
-                return abs(value)
-
-            except ValueError:
-                raise ValueError("Invalid value supplied to ABS in line " +
-                                 str(self.__line_number))
-
-        elif category == Token.ATN:
-            try:
-                return math.atan(value)
-
-            except ValueError:
-                raise ValueError("Invalid value supplied to ATN in line " +
-                                 str(self.__line_number))
-
-        elif category == Token.COS:
-            try:
-                return math.cos(value)
-
-            except ValueError:
-                raise ValueError("Invalid value supplied to COS in line " +
-                                 str(self.__line_number))
-
-        elif category == Token.EXP:
-            try:
-                return math.exp(value)
-
-            except ValueError:
-                raise ValueError("Invalid value supplied to EXP in line " +
-                                 str(self.__line_number))
-
-        elif category == Token.INT:
-            try:
-                return math.floor(value)
-
-            except ValueError:
-                raise ValueError("Invalid value supplied to INT in line " +
-                                 str(self.__line_number))
-
-        elif category == Token.ROUND:
-            try:
-                return round(value)
-
+                return self.__evaluate_math_function_map[category](value)
             except TypeError:
-                raise TypeError("Invalid type supplied to LEN in line " +
-                                 str(self.__line_number))
-
-        elif category == Token.LOG:
-            try:
-                return math.log(value)
-
+                    raise TypeError("Invalid type supplied to command in line " +
+                                     str(self.__line_number))
             except ValueError:
-                raise ValueError("Invalid value supplied to LOG in line " +
+                raise ValueError("Invalid value supplied to command in line " +
                                  str(self.__line_number))
-
-        elif category == Token.SIN:
-            try:
-                return math.sin(value)
-
-            except ValueError:
-                raise ValueError("Invalid value supplied to SIN in line " +
-                                 str(self.__line_number))
-
-        elif category == Token.TAN:
-            try:
-                return math.tan(value)
-
-            except ValueError:
-                raise ValueError("Invalid value supplied to TAN in line " +
-                                 str(self.__line_number))
-
-        elif category == Token.CHR:
-            try:
-                return chr(value)
-
-            except TypeError:
-                raise TypeError("Invalid type supplied to CHR$ in line " +
-                                 str(self.__line_number))
-
-            except ValueError:
-                raise ValueError("Invalid value supplied to CHR$ in line " +
-                                 str(self.__line_number))
-
-        elif category == Token.ASC:
-            try:
-                return ord(value)
-
-            except TypeError:
-                raise TypeError("Invalid type supplied to ASC in line " +
-                                 str(self.__line_number))
-
-            except ValueError:
-                raise ValueError("Invalid value supplied to ASC in line " +
-                                 str(self.__line_number))
-
-        elif category == Token.STR:
-            return str(value)
 
         elif category == Token.VAL:
             try:
@@ -1883,14 +1736,6 @@ class BASICParser:
             # Like other BASIC variants, non-numeric strings return 0
             except ValueError:
                 return 0
-
-        elif category == Token.LEN:
-            try:
-                return len(value)
-
-            except TypeError:
-                raise TypeError("Invalid type supplied to LEN in line " +
-                                 str(self.__line_number))
 
         elif category == Token.UPPER:
             if not isinstance(value, str):
