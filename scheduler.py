@@ -149,16 +149,17 @@ class Task(object):
         
     def get_message(self, sender = None):
         msg = None
-        try:
+        if len(self.msgs) > 0:
             if sender is None:
                 msg = self.msgs.pop(0)
                 _ = self.msgs_senders.pop(0)
             else:
-                i = self.msgs_senders.index(sender)
-                msg = self.msgs.pop(i)
-                _ = self.msgs_senders.pop(i)
-        except Exception as e:
-            pass
+                try:
+                    i = self.msgs_senders.index(sender)
+                    msg = self.msgs.pop(i)
+                    _ = self.msgs_senders.pop(i)
+                except:
+                    pass
         return msg
         
     def ready(self):
@@ -239,11 +240,16 @@ class Scheluder(object):
     def set_log_to(self, task_id):
         self.log_to = task_id
     
-    def log(self, content):
-        if self.log_to:
-            self.tasks_ids[self.log_to].put_message(Message.get().load({"output": content}, sender = 0, sender_name = self.name))
-        else:
-            print(content)
+    def log(self, head, e):
+        try:
+            if self.log_to:
+                buf = StringIO()
+                sys.print_exception(e, buf)
+                self.tasks_ids[self.log_to].put_message(Message.get().load({"output": head + buf.getvalue()}, sender = 0, sender_name = self.name))
+            else:
+               sys.print_exception(e)
+        except Exception as e:
+            sys.print_exception(e)
 
     def run(self):
         while not self.stop:
@@ -289,9 +295,8 @@ class Scheluder(object):
                                         del sys.modules[m_name]
                                         gc.collect()
                                     except Exception as e:
-                                        buf = StringIO()
-                                        sys.print_exception(e, buf)
-                                        self.log("task: %s\n%s" % (self.current.name, buf.getvalue()))
+                                        h = "task: %s\n" % self.current.name
+                                        self.log(h, e)
                                 self.current.clean()
                                 # del self.current
                                 self.current = None
@@ -301,9 +306,8 @@ class Scheluder(object):
                                     # del self.current
                                 self.current = None
                             except Exception as e:
-                                buf = StringIO()
-                                sys.print_exception(e, buf)
-                                self.log("task: %s\n%s" % (self.current.name, buf.getvalue()))
+                                h = "task: %s\n" % self.current.name
+                                self.log(h, e)
                                 if self.current:
                                     self.current.clean()
                                     # del self.current
@@ -315,7 +319,9 @@ class Scheluder(object):
                     sleep_ms(self.idle_sleep_interval)
                     self.sleep_ms += self.idle_sleep_interval
             except KeyboardInterrupt as e:
-                self.log("scheduler exit: %s" % sys.print_exception(e))
+                h = "scheduler exit: "
+                self.log(h, e)
                 break
             except Exception as e:
-                self.log("scheduler exit: %s" % sys.print_exception(e))
+                h = "scheduler exit: "
+                self.log(h, e)
