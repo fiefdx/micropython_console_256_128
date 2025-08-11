@@ -95,9 +95,9 @@ class EditShell(object):
             self.cursor_move_up()
         elif c == "DN":
             self.cursor_move_down()
-        elif c in ("SUP", "BX"):
+        elif c in ("BX"):
             self.page_up()
-        elif c in ("SDN", "BB"):
+        elif c in ("BB"):
             self.page_down()
         elif c == "LT":
             self.cursor_move_left()
