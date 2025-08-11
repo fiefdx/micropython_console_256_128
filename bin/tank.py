@@ -226,7 +226,9 @@ def main(*args, **kwargs):
             w.tanks.append(Tank(0, 1, 0))
             w.update()
             yield Condition.get().load(sleep = frame_interval, wait_msg = False, send_msgs = [
-                Message.get().load({"bricks": {"offset_x": 0, "offset_y": 0, "data": w.get_diff_frame(), "width": width, "height": height, "size": size}}, receiver = display_id)
+                Message.get().load({
+                    "render": (("bricks", "bricks"),),
+                    "bricks": {"offset_x": 0, "offset_y": 0, "data": w.get_diff_frame(), "width": width, "height": height, "size": size}}, receiver = display_id)
             ])
             c = None
             msg = task.get_message()
@@ -236,7 +238,9 @@ def main(*args, **kwargs):
             while c != "ES":
                 w.update()
                 yield Condition.get().load(sleep = frame_interval, wait_msg = False, send_msgs = [
-                    Message.get().load({"bricks": {"offset_x": 0, "offset_y": 0, "data": w.get_diff_frame(), "width": width, "height": height, "size": size}}, receiver = display_id)
+                    Message.get().load({
+                        "render": (("bricks", "bricks"),),
+                        "bricks": {"offset_x": 0, "offset_y": 0, "data": w.get_diff_frame(), "width": width, "height": height, "size": size}}, receiver = display_id)
                 ])
                 msg = task.get_message()
                 if msg:
@@ -274,6 +278,3 @@ def main(*args, **kwargs):
         yield Condition.get().load(sleep = 0, send_msgs = [
             Message.get().load({"output": str(reason)}, receiver = shell_id)
         ])
-        
-
-
