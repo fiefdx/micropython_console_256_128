@@ -212,76 +212,78 @@ def display(task, name, scheduler = None, display_cs = None, sd_cs = None, spi =
                 #    lcd.line(127, 0, 127, 2, 1)
                 #elif scheduler.keyboard.mode == "CP":
                 #    lcd.line(127, 3, 127, 5, 1)
-                if "tiles" in msg.content:
-                    refresh = True
-                    offset_x = msg.content["tiles"]["offset_x"]
-                    offset_y = msg.content["tiles"]["offset_y"]
-                    width = msg.content["tiles"]["width"]
-                    height = msg.content["tiles"]["height"]
-                    size_w = msg.content["tiles"]["size_w"]
-                    size_h = msg.content["tiles"]["size_h"]
-                    data = msg.content["tiles"]["data"]
-                    for w in range(width):
-                        x = w * size_w + offset_x
-                        for h in range(height):
-                            y = h * size_h + offset_y
-                            tile_wri.print_tile_id(data[h][w], x, y)
-                if "objects" in msg.content:
-                    refresh = True
-                    for o in msg.content["objects"]:
-                        tile_wri.print_tile_id(o["id"], o["x"], o["y"])
-                if "bricks" in msg.content:
-                    refresh = True
-                    offset_x = msg.content["bricks"]["offset_x"]
-                    offset_y = msg.content["bricks"]["offset_y"]
-                    width = msg.content["bricks"]["width"]
-                    height = msg.content["bricks"]["height"]
-                    brick_size = msg.content["bricks"]["size"]
-                    data = msg.content["bricks"]["data"]
-                    if brick_size == 6:
-                        for w in range(width):
-                            x = w * brick_size + offset_x
-                            for h in range(height):
-                                y = h * brick_size + offset_y
-                                if data[h][w] == "o":
-                                    # lcd.rect(x, y, brick_size, brick_size, 0)
-                                    tile_wri.print_tile_id(60, x, y)
-                                elif data[h][w] == "x":
-                                    # lcd.rect(x, y, brick_size, brick_size, 1)
-                                    tile_wri.print_tile_id(61, x, y)
-                    elif brick_size == 4:
-                        for w in range(width):
-                            x = w * brick_size + offset_x
-                            for h in range(height):
-                                y = h * brick_size + offset_y
-                                if data[h][w] == "o":
-                                    # lcd.rect(x, y, brick_size, brick_size, 0)
-                                    tile_wri.print_tile_id(40, x, y)
-                                elif data[h][w] == "x":
-                                    # lcd.rect(x, y, brick_size, brick_size, 1)
-                                    tile_wri.print_tile_id(41, x, y)
-                if "texts" in msg.content:
-                    refresh = True
-                    for text in msg.content["texts"]:
-                        x = text["x"]
-                        y = text["y"]
-                        c = text["c"]
-                        s = text["s"]
-                        wri = Writer(lcd, font7)
-                        #Writer.set_textpos(lcd, y, x)
-                        #wri.printstring(c, 0)
-                        Writer.set_textpos(lcd, y, x)
-                        wri.printstring(s, 0)
-                if "lines" in msg.content:
-                    refresh = True
-                    for line in msg.content["lines"]:
-                        xs, ys, xe, ye, invert_color = line
-                        lcd.line(xs, ys, xe, ye, 1 if invert_color else 0)
-                if "rects" in msg.content:
-                    refresh = True
-                    for rect in msg.content["rects"]:
-                        x, y, w, h = rect
-                        lcd.rect(x, y, w, h, 1)
+                if "render" in msg.content:
+                    for category in msg.content["render"]:
+                        if category == "tiles" and "tiles" in msg.content:
+                            refresh = True
+                            offset_x = msg.content["tiles"]["offset_x"]
+                            offset_y = msg.content["tiles"]["offset_y"]
+                            width = msg.content["tiles"]["width"]
+                            height = msg.content["tiles"]["height"]
+                            size_w = msg.content["tiles"]["size_w"]
+                            size_h = msg.content["tiles"]["size_h"]
+                            data = msg.content["tiles"]["data"]
+                            for w in range(width):
+                                x = w * size_w + offset_x
+                                for h in range(height):
+                                    y = h * size_h + offset_y
+                                    tile_wri.print_tile_id(data[h][w], x, y)
+                        if category == "objects" and "objects" in msg.content:
+                            refresh = True
+                            for o in msg.content["objects"]:
+                                tile_wri.print_tile_id(o["id"], o["x"], o["y"])
+                        if category == "bricks" and "bricks" in msg.content:
+                            refresh = True
+                            offset_x = msg.content["bricks"]["offset_x"]
+                            offset_y = msg.content["bricks"]["offset_y"]
+                            width = msg.content["bricks"]["width"]
+                            height = msg.content["bricks"]["height"]
+                            brick_size = msg.content["bricks"]["size"]
+                            data = msg.content["bricks"]["data"]
+                            if brick_size == 6:
+                                for w in range(width):
+                                    x = w * brick_size + offset_x
+                                    for h in range(height):
+                                        y = h * brick_size + offset_y
+                                        if data[h][w] == "o":
+                                            # lcd.rect(x, y, brick_size, brick_size, 0)
+                                            tile_wri.print_tile_id(60, x, y)
+                                        elif data[h][w] == "x":
+                                            # lcd.rect(x, y, brick_size, brick_size, 1)
+                                            tile_wri.print_tile_id(61, x, y)
+                            elif brick_size == 4:
+                                for w in range(width):
+                                    x = w * brick_size + offset_x
+                                    for h in range(height):
+                                        y = h * brick_size + offset_y
+                                        if data[h][w] == "o":
+                                            # lcd.rect(x, y, brick_size, brick_size, 0)
+                                            tile_wri.print_tile_id(40, x, y)
+                                        elif data[h][w] == "x":
+                                            # lcd.rect(x, y, brick_size, brick_size, 1)
+                                            tile_wri.print_tile_id(41, x, y)
+                        if category == "texts" and "texts" in msg.content:
+                            refresh = True
+                            for text in msg.content["texts"]:
+                                x = text["x"]
+                                y = text["y"]
+                                c = text["c"]
+                                s = text["s"]
+                                wri = Writer(lcd, font7)
+                                #Writer.set_textpos(lcd, y, x)
+                                #wri.printstring(c, 0)
+                                Writer.set_textpos(lcd, y, x)
+                                wri.printstring(s, 0)
+                        if category == "lines" and "lines" in msg.content:
+                            refresh = True
+                            for line in msg.content["lines"]:
+                                xs, ys, xe, ye, invert_color = line
+                                lcd.line(xs, ys, xe, ye, 1 if invert_color else 0)
+                        if category == "rects" and "rects" in msg.content:
+                            refresh = True
+                            for rect in msg.content["rects"]:
+                                x, y, w, h = rect
+                                lcd.rect(x, y, w, h, 1)
                 if "binary" in msg.content:
                     refresh = True
                     data = msg.content["binary"]

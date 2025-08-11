@@ -396,6 +396,7 @@ class Game(object):
                  [131, 69, 117, 18],
                  cursor]
         return {
+            "render": ("tiles", "lines", "texts", "rects"),
             "tiles": {
                 "data": self.table,
                 "width": 15,
