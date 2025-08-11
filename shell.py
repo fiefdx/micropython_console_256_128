@@ -38,8 +38,6 @@ class Shell(object):
         self.history_file_path = const(history_file_path)
         self.bin_path = const(bin_path)
         self.load_history()
-        #from bin import ls, pwd, cd, mkdir, cp, rm, touch, echo, cat, ifconfig, connect, disconnect, reconnect, scan, read, help
-        #from bin import top, python, clear, learn, reset, edit, editold, readpages, rename, bricks, tank, badapple, umount, mount, date, stats
     
     def load_history(self):
         if exists(self.history_file_path):
@@ -83,10 +81,22 @@ class Shell(object):
     def help_commands(self):
         result = ""
         fs = uos.listdir("/bin")
+        line = ""
         for f in fs:
             if f not in ("__init__.py", ):
-                result += f.split(".")[0] + "\n"
-        return result[:-1]
+                cmd = f.split(".")[0]
+                if len(line + cmd + ", ") > self.display_width:
+                    result += line + "\n"
+                    line = cmd + ", "
+                else:
+                    line += cmd + ", "
+        if line != "":
+            result += line
+        if result.endswith(", "):
+            result = result[:-2]
+        elif result.endswith("\n"):
+            result = result[:-1]
+        return result
         
     def get_display_frame(self):
         # return self.cache[-self.display_height:]
