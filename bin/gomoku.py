@@ -393,10 +393,9 @@ class Game(object):
                  [131, 4, 117, 63],
                  [131, 4, 117, 18],
                  [131, 69, 117, 56],
-                 [131, 69, 117, 18],
-                 cursor]
+                 [131, 69, 117, 18]]
         return {
-            "render": ("tiles", "lines", "texts", "rects"),
+            "render": (("rects", "rects"), ("lines", "lines"), ("tiles", "tiles"), ("texts", "texts"), ("pointer", "rects")),
             "tiles": {
                 "data": self.table,
                 "width": 15,
@@ -409,6 +408,7 @@ class Game(object):
             "lines": lines,
             "rects": rects,
             "texts": texts,
+            "pointer": [cursor]
         }
         
 
@@ -448,13 +448,13 @@ def main(*args, **kwargs):
         }},
         {"id": 72, "body": {
             "tile": [
-                0b00000000,
-                0b00000000,
-                0b00000000,
-                0b00000000,
-                0b00000000,
-                0b00000000,
-                0b00000000],
+                0b00010000,
+                0b00010000,
+                0b00010000,
+                0b11111110,
+                0b00010000,
+                0b00010000,
+                0b00010000],
             "width": 7, "height": 7
         }},
     ]
