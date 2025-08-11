@@ -22,7 +22,6 @@ class EditShell(object):
         self.offset_row = 0
         self.cache_size = cache_size
         self.cache = [] if ram else ListFile("/.edit_cache.json", shrink_threshold = 1024000) # []
-        self.lines_pos = {}
         self.cursor_color = 1
         self.cursor_row = 0
         self.cursor_col = 0
@@ -37,7 +36,6 @@ class EditShell(object):
             f = open(self.file_path, "w")
             f.close()
         self.file = open(self.file_path, "r")
-        self.load_and_calc_total_lines()
         self.status = "saved"
         self.exit_count = 0
         
@@ -112,28 +110,35 @@ class EditShell(object):
         
     def load_and_calc_total_lines(self):
         n = 0
+        self.file.seek(0, 2)
+        size = self.file.tell()
+        yield 0
+        self.file.seek(0)
         pos = self.file.tell()
         line = self.file.readline()
         while line:
-            self.lines_pos[n] = pos
-            if line:
-                line = line.replace("\r", "")
-                line = line.replace("\n", "")
-                self.cache.append(line)
+            line = line.replace("\r", "")
+            line = line.replace("\n", "")
+            self.cache.append(line)
             n += 1
             if n % 100 == 0:
                 gc.collect()
             pos = self.file.tell()
             line = self.file.readline()
-        self.file.seek(0)
+            if n % 10 == 0:
+                yield int(pos * 100 / size)
         self.total_lines = n
         self.file.close()
+        yield 100
         
     def exists_line(self, line_num):
         return line_num >= 0 and line_num < self.total_lines
             
     def get_display_frame(self):
         return self.cache_to_frame()
+
+    def get_loading_frame(self, p):
+        return ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "loading: %s%%" % p]
             
     def cache_to_frame(self):
         frame = []
@@ -243,9 +248,7 @@ class EditShell(object):
     def close(self):
         self.file.close()
         self.cache.clear()
-        self.lines_pos.clear()
         del self.cache
-        del self.lines_pos
 
 def main(*args, **kwargs):
     #print(kwargs["args"])
@@ -264,6 +267,10 @@ def main(*args, **kwargs):
                 ram = int(kwargs["args"][1]) == 1
             s = EditShell(file_path, ram = ram)
             shell.current_shell = s
+            for p in s.load_and_calc_total_lines():
+                yield Condition.get().load(sleep = 0, wait_msg = False, send_msgs = [
+                    Message.get().load({"frame": s.get_loading_frame(p), "cursor": s.get_cursor_position(1)}, receiver = display_id)
+                ])
             yield Condition.get().load(sleep = 0, wait_msg = True, send_msgs = [
                 Message.get().load({"frame": s.get_display_frame(), "cursor": s.get_cursor_position(1)}, receiver = display_id)
             ])
@@ -293,7 +300,9 @@ def main(*args, **kwargs):
     except Exception as e:
         shell.disable_output = False
         shell.current_shell = None
-        reason = sys.print_exception(e)
+        buf = StringIO()
+        sys.print_exception(e, buf)
+        reason = buf.getvalue()
         if reason is None:
             reason = "edit failed"
         yield Condition.get().load(sleep = 0, send_msgs = [
