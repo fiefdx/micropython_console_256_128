@@ -63,7 +63,7 @@ def monitor(task, name, scheduler = None, display_id = None):
         #                                                   ram_used)
         # print(monitor_msg)
         # print(Message.remain(), Condition.remain(), Task.remain())
-        yield Condition.get().load(sleep = 2000)
+        yield Condition.get().load(sleep = 1000)
         #yield Condition(sleep = 100, send_msgs = [Message.get().load({"output": monitor_msg}, receiver = scheduler.shell_id)])
 
 
@@ -164,7 +164,7 @@ def display(task, name, scheduler = None, display_cs = None, sd_cs = None, spi =
                     else:
                         lines = frame
                     x = 1
-                    if lines.count(False) < 9:
+                    if False and lines.count(False) < 9:
                         wri.clear_frame(18, 42, 0)
                         wri.printframe(frame, 0)
                         refresh = True
@@ -328,7 +328,7 @@ def display(task, name, scheduler = None, display_cs = None, sd_cs = None, spi =
                 break
             except Exception as e:
                 msg.release()
-                print(e)
+                sys.print_exception(e)
             
             
 def storage(task, name, scheduler = None, display_cs = None, sd_cs = None, spi = None):
