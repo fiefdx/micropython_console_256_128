@@ -12,7 +12,7 @@ class ListFile(object):
         self.current = 0
         
     def writejson(self, d, wf = None):
-        line = json.dumps({"d": d}) + "\n"
+        line = json.dumps(d) + "\n"
         length = len(line)
         if wf is None:
             pos = self.wf.tell()
@@ -36,7 +36,7 @@ class ListFile(object):
     def pop(self, i):
         pos = self.list.pop(i)
         self.rf.seek(pos, 0)
-        d = json.loads(self.rf.readline()[:-1])["d"]
+        d = json.loads(self.rf.readline()[:-1])
         return d
     
     def __iter__(self):
@@ -47,7 +47,7 @@ class ListFile(object):
         if self.current < len(self.list):
             pos = self.list[self.current]
             self.rf.seek(pos, 0)
-            d = json.loads(self.rf.readline()[:-1])["d"]
+            d = json.loads(self.rf.readline()[:-1])
             self.current += 1
             return d
         raise StopIteration
@@ -95,7 +95,7 @@ class ListFile(object):
                 key = len(self.list) - 1
             pos = self.list[key]
             self.rf.seek(pos, 0)
-            d = json.loads(self.rf.readline()[:-1])["d"]
+            d = json.loads(self.rf.readline()[:-1])
             return d
     
     def get(self, key):
