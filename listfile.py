@@ -110,6 +110,15 @@ class ListFile(object):
             self.rf.close()
             self.rf = open(self.path, "r")
 
+    def insert(self, key, value):
+        pos, length = self.writejson(value)
+        self.list.insert(key, pos)
+        if max(self.list) > self.shrink_threshold:
+            self.shrink()
+        else:
+            self.rf.close()
+            self.rf = open(self.path, "r")
+
     def shrink(self):
         self.list_tmp = []
         wf = open(self.path + ".tmp", "w")
