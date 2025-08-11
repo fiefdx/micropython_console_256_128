@@ -9,6 +9,7 @@ class ListFile(object):
         self.wf = open(self.path, "w")
         self.rf = open(self.path, "r")
         self.list = []
+        self.current = 0
         
     def writejson(self, d, wf = None):
         line = json.dumps({"d": d}) + "\n"
@@ -28,13 +29,28 @@ class ListFile(object):
         self.list.append(pos)
         if max(self.list) > self.shrink_threshold:
             self.shrink()
+        else:
+            self.rf.close()
+            self.rf = open(self.path, "r")
 
     def pop(self, i):
         pos = self.list.pop(i)
-        self.rf = open(self.path, "r")
         self.rf.seek(pos, 0)
         d = json.loads(self.rf.readline()[:-1])["d"]
         return d
+    
+    def __iter__(self):
+        self.current = 0
+        return self
+
+    def __next__(self):
+        if self.current < len(self.list):
+            pos = self.list[self.current]
+            self.rf.seek(pos, 0)
+            d = json.loads(self.rf.readline()[:-1])["d"]
+            self.current += 1
+            return d
+        raise StopIteration
 
     def __contains__(self, key):
         return False
@@ -78,7 +94,6 @@ class ListFile(object):
             elif key >= len(self.list):
                 key = len(self.list) - 1
             pos = self.list[key]
-            self.rf = open(self.path, "r")
             self.rf.seek(pos, 0)
             d = json.loads(self.rf.readline()[:-1])["d"]
             return d
@@ -91,6 +106,9 @@ class ListFile(object):
         self.list[key] = pos
         if max(self.list) > self.shrink_threshold:
             self.shrink()
+        else:
+            self.rf.close()
+            self.rf = open(self.path, "r")
 
     def shrink(self):
         self.list_tmp = []
@@ -113,5 +131,3 @@ class ListFile(object):
         self.list.clear()
         # self.rf.close()
         # self.wf.close()
-        # self.wf = open(self.path, "w")
-        # self.rf = open(self.path, "r")
