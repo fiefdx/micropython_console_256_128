@@ -15,7 +15,7 @@ coroutine = True
 
 
 class EditShell(object):
-    def __init__(self, file_path, display_size = (42, 18), cache_size = 17, ram = True):
+    def __init__(self, file_path, display_size = (42, 18), cache_size = 17, ram = False):
         self.display_width = display_size[0]
         self.display_height = display_size[1]
         self.offset_col = 0
@@ -138,7 +138,13 @@ class EditShell(object):
         return self.cache_to_frame()
 
     def get_loading_frame(self, p):
-        return ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "loading: %s%%" % p]
+        msg = "loading: %s%%" % p
+        self.cursor_col = len(msg)
+        self.cursor_row = 17
+        if p == 100:
+            self.cursor_row = 0
+            self.cursor_col = 0
+        return ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", msg]
             
     def cache_to_frame(self):
         frame = []
@@ -262,7 +268,7 @@ def main(*args, **kwargs):
     try:
         if len(kwargs["args"]) > 0:
             file_path = kwargs["args"][0]
-            ram = True
+            ram = False
             if len(kwargs["args"]) > 1:
                 ram = int(kwargs["args"][1]) == 1
             s = EditShell(file_path, ram = ram)
