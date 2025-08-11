@@ -362,6 +362,7 @@ class Game(object):
                  {"s": "white: %d/%d  " % (self.think[self.white], self.think_games), "c": " ", "x": 136, "y": 106},
                  {"s": "tie:   %d/%d  " % (self.think[self.empty], self.think_games), "c": " ", "x": 136, "y": 114},]
         return {
+            "render": (("rects", "rects"), ("lines", "lines"), ("tiles", "tiles"), ("objects", "objects"), ("texts", "texts")),
             "tiles": {
                 "data": self.table,
                 "width": 7,
@@ -392,7 +393,6 @@ class Game(object):
             "objects": objects,
             "texts": texts,
         }
-        
 
 
 def main(*args, **kwargs):
