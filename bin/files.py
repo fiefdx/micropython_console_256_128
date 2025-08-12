@@ -1,5 +1,5 @@
+import os
 import sys
-import uos
 from math import ceil
 
 from scheduler import Condition, Message
@@ -35,16 +35,15 @@ class Explorer(object):
 
     def load(self, force = False):
         if exists(self.path):
-            fs = uos.listdir(self.path)
+            fs = os.ilistdir(self.path)
             if self.pwd != self.path or force:
                 self.files = 0
                 self.dirs = 0
                 for f in fs:
-                    p = path_join(self.path, f)
-                    s = uos.stat(p)
-                    if s[0] == 16384:
+                    p = path_join(self.path, f[0])
+                    if f[1] == 16384:
                         self.dirs += 1
-                    elif s[0] == 32768:
+                    elif f[1] == 32768:
                         self.files += 1
                 self.pwd = self.path
                 self.total = self.dirs + self.files
@@ -57,26 +56,25 @@ class Explorer(object):
             n = 0
             end = False
             self.cache.clear()
+            fs = os.ilistdir(self.path)
             for f in fs:
-                p = path_join(self.path, f)
-                s = uos.stat(p)
-                size = get_size(s[6])
-                if s[0] == 16384:
+                p = path_join(self.path, f[0])
+                if f[1] == 16384:
                     n += 1
                     if n > self.current_page * self.page_size:
-                        self.cache.append((f, "D", "   0.00B", p))
+                        self.cache.append((f[0], "D", "   0.00B", p))
                     if n == (self.current_page + 1) * self.page_size:
                         end = True
                         break
             if not end:
+                fs = os.ilistdir(self.path)
                 for f in fs:
-                    p = path_join(self.path, f)
-                    s = uos.stat(p)
-                    size = get_size(s[6])
-                    if s[0] == 32768:
+                    p = path_join(self.path, f[0])
+                    if f[1] == 32768:
+                        size = get_size(f[3])
                         n += 1
                         if n > self.current_page * self.page_size:
-                            self.cache.append((f, "F", size, p))
+                            self.cache.append((f[0], "F", size, p))
                         if n == (self.current_page + 1) * self.page_size:
                             break
 
@@ -100,6 +98,15 @@ class Explorer(object):
                 self.mode = "rm"
         else:
             self.warning = "nothing to delete"
+
+    def copy(self):
+        pass
+
+    def cut(self):
+        pass
+
+    def paste(self):
+        pass
 
     def get_frame(self):
         path = self.path
@@ -159,7 +166,7 @@ class Explorer(object):
             "frame": frame,
             "clean_pointer": clean_pointer,
             "pointer": pointer,
-            "borders": [[0, 0, 256, 8, 1], [0, 0, 256, 128, 1], [0, 119, 256, 9, 1]],
+            "borders": [[0, 0, 256, 8, 1], [0, 0, 256, 127, 1], [0, 119, 256, 8, 1]],
             "border_lines": border_lines,
             "contents": contents,
             "status": [
@@ -229,6 +236,12 @@ class Explorer(object):
                 self.create_dir()
             elif c == "r":
                 self.remove()
+            elif c == "Ctrl-C":
+                self.copy()
+            elif c == "Ctrl-X":
+                self.cut()
+            elif c == "Ctrl-v":
+                self.paste()
         elif self.mode == "cf" or self.mode == "cd":
             if c == "\n" or c == "BA":
                 new_name = self.new_name.strip()
@@ -311,7 +324,7 @@ def main(*args, **kwargs):
     shell.enable_cursor = False
     shell.scheduler.keyboard.scan_rows = 5
     try:
-        path = uos.getcwd()
+        path = os.getcwd()
         if len(kwargs["args"]) > 0:
             path = kwargs["args"][0]
         if len(path) > 1 and path.endswith("/"):
