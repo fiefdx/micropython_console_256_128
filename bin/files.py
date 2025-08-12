@@ -3,7 +3,7 @@ import sys
 from math import ceil
 
 from scheduler import Condition, Message
-from common import exists, path_join, get_size, path_split, mkdirs, rmtree
+from common import exists, path_join, get_size, path_split, mkdirs, rmtree, copy
 
 coroutine = True
 
@@ -31,6 +31,8 @@ class Explorer(object):
         self.name_length_limit = 42
         self.cursor_color = 1
         self.warning = ""
+        self.status = ""
+        self.copied_item = None
         self.load()
 
     def load(self, force = False):
@@ -100,13 +102,19 @@ class Explorer(object):
             self.warning = "nothing to delete"
 
     def copy(self):
-        pass
+        self.status = "copied"
+        self.copied_item = (self.cache[self.cursor_row], self.path)
 
     def cut(self):
-        pass
+        self.status = "cutted"
+        self.copied_item = (self.cache[self.cursor_row], self.path)
 
     def paste(self):
-        pass
+        if self.mode == "" and (self.status == "copied" or self.status == "cutted"):
+            self.mode = "paste"
+            self.new_name = self.copied_item[0][0]
+            self.cursor_x = len(self.new_name)
+            self.shell.enable_cursor = True
 
     def get_frame(self):
         path = self.path
@@ -159,6 +167,15 @@ class Explorer(object):
             pointer = [[0, 7, 256, 8, 1]]
             contents.append({"s": "Are you sure you want to delete it? [y/n]", "c": " ", "x": 3, "y": 15})
             contents.append({"s": target[0], "c": " ", "x": 3, "y": 8})
+        elif self.mode == "paste":
+            for i in range(self.page_size):
+                frame.append("")
+            frame[0] = " " * 18 + "Paste"
+            frame[1] = self.new_name
+            border_lines = [[191, 8, 191, 118, 0], [203, 8, 203, 118, 0]]
+            clean_pointer = [[1, self.previous_cursor_row * 7 + 7, 254, 8, 0], [1, self.cursor_row * 7 + 7, 254, 8, 0]]
+            pointer = [[0, 7, 256, 8, 1]]
+            contents.append({"s": self.new_name, "c": " ", "x": 3, "y": 8})
         data = {
             "render": (("clean_pointer", "rects"), ("borders", "rects"), ("border_lines", "lines"), ("status", "texts"), ("pointer", "rects"), ("contents", "texts")),
             "frame": frame,
@@ -168,7 +185,7 @@ class Explorer(object):
             "border_lines": border_lines,
             "contents": contents,
             "status": [
-                {"s": "%s/%s/%s" % (self.current_page + 1, self.total_pages, self.total), "c": " ", "x": 3, "y": 120},
+                {"s": "%s/%s/%s         " % (self.current_page + 1, self.total_pages, self.total), "c": " ", "x": 3, "y": 120},
                 {"s": "% 20s" % self.warning, "c": " ", "x": 135, "y": 120}
             ]
         }
@@ -185,12 +202,12 @@ class Explorer(object):
     def input_char(self, c):
         if self.mode == "":
             self.warning = ""
-            if c == "UP":
+            if c == "UP" or c == "SUP":
                 self.previous_cursor_row = self.cursor_row
                 self.cursor_row -= 1
                 if self.cursor_row <= 0:
                     self.cursor_row = 0
-            elif c == "DN":
+            elif c == "DN" or c == "SDN":
                 self.previous_cursor_row = self.cursor_row
                 self.cursor_row += 1
                 if self.cursor_row >= len(self.cache):
@@ -239,7 +256,7 @@ class Explorer(object):
                 self.copy()
             elif c == "Ctrl-X":
                 self.cut()
-            elif c == "Ctrl-v":
+            elif c == "Ctrl-V":
                 self.paste()
         elif self.mode == "cf" or self.mode == "cd":
             if c == "\n" or c == "BA":
@@ -310,6 +327,53 @@ class Explorer(object):
                 self.mode = ""
             elif c == "n":
                 self.mode = ""
+        elif self.mode == "paste":
+            if c == "\n" or c == "BA":
+                new_name = self.new_name.strip()
+                if new_name != "":
+                    n = 0
+                    source = path_join(self.copied_item[1], self.copied_item[0][0])
+                    target = path_join(self.path, new_name)
+                    if exists(source):
+                        if not exists(target):
+                            for i in copy(source, target):
+                                n += 1
+                            if self.status == "cutted":
+                                for i in rmtree(source):
+                                    pass
+                            self.mode = ""
+                            self.load(force = True)
+                            self.shell.enable_cursor = False
+                            self.warning = "paste %s items" % n
+                        else:
+                            self.warning = "target exists"
+                    else:
+                        self.warning = "source not exists"
+                else:
+                    self.warning = "invalid name"
+            elif c == "\b":
+                delete_before = self.new_name[:self.cursor_x]
+                if len(delete_before) > 0:
+                    self.new_name = self.new_name[:self.cursor_x - 1] + self.new_name[self.cursor_x:]
+                    self.cursor_x -= 1
+            elif c == "LT":
+                self.cursor_x -= 1
+                if self.cursor_x <= 0:
+                    self.cursor_x = 0
+            elif c == "RT":
+                self.cursor_x += 1
+                if self.cursor_x >= len(self.new_name):
+                    self.cursor_x = len(self.new_name)
+            elif c == "BB":
+                self.mode = ""
+                self.shell.enable_cursor = False
+            else:
+                if len(c) == 1:
+                    if len(self.new_name) < self.name_length_limit:
+                        self.new_name = self.new_name[:self.cursor_x] + c + self.new_name[self.cursor_x:]
+                        self.cursor_x += 1
+                        if self.cursor_x >= self.name_length_limit:
+                            self.cursor_x = self.name_length_limit
 
 
 def main(*args, **kwargs):
