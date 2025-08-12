@@ -26,7 +26,7 @@ def main(*args, **kwargs):
             max_length = 0
             for f in fs:
                 p = path_join(path, f[0])
-                size = get_size(f[3])
+                size = get_size(f[3]) if len(f) > 3 else ""
                 if len(f[0]) + len(size) + 3 > max_length:
                     max_length = len(f[0]) + len(size) + 3
                 if f[1] == 16384:
@@ -78,7 +78,7 @@ def main(*args, **kwargs):
                 fs = os.ilistdir(path)
                 for f in fs:
                     p = path_join(path, f[0])
-                    size = get_size(f[3])
+                    size = get_size(f[3]) if len(f) > 3 else ""
                     if f[1] == 32768:
                         line = format_string % (f[0] + " " * (max_length - 11 - len(f[0])), "F", size)
                         n += 1
