@@ -169,7 +169,7 @@ class Explorer(object):
             "contents": contents,
             "status": [
                 {"s": "%s/%s/%s" % (self.current_page + 1, self.total_pages, self.total), "c": " ", "x": 3, "y": 120},
-                {"s": self.warning, "c": " ", "x": 70, "y": 120}
+                {"s": "% 20s" % self.warning, "c": " ", "x": 135, "y": 120}
             ]
         }
         if self.shell.enable_cursor:
@@ -184,6 +184,7 @@ class Explorer(object):
 
     def input_char(self, c):
         if self.mode == "":
+            self.warning = ""
             if c == "UP":
                 self.previous_cursor_row = self.cursor_row
                 self.cursor_row -= 1
@@ -252,7 +253,7 @@ class Explorer(object):
                         self.load(force = True)
                         self.shell.enable_cursor = False
                     else:
-                        self.warning = "file exists!"
+                        self.warning = "file exists"
                 elif self.mode == "cd" and new_name != "":
                     path = path_join(self.path, new_name)
                     if not exists(path):
@@ -261,7 +262,7 @@ class Explorer(object):
                         self.load(force = True)
                         self.shell.enable_cursor = False
                     else:
-                        self.warning = "folder exists!"
+                        self.warning = "folder exists"
             elif c == "\b":
                 delete_before = self.new_name[:self.cursor_x]
                 if len(delete_before) > 0:
@@ -294,7 +295,7 @@ class Explorer(object):
                     if exists(path):
                         for p in rmtree(path):
                             n += 1
-                        self.warning = "delete %s files/folders!" % n
+                        self.warning = "delete %s items" % n
                         self.load(force = True)
                         if len(self.cache) == 0:
                             self.previous_cursor_row = self.cursor_row
