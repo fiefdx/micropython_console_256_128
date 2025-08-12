@@ -130,13 +130,13 @@ def render_texts(name, msg, wri, lcd):
 
 def render_lines(name, msg, lcd):
     for line in msg.content[name]:
-        xs, ys, xe, ye, invert_color = line
-        lcd.line(xs, ys, xe, ye, 1 if invert_color else 0)
+        xs, ys, xe, ye, color = line
+        lcd.line(xs, ys, xe, ye, color)
 
 
 def render_rects(name, msg, lcd):
     for rect in msg.content[name]:
-        x, y, w, h = rect
+        x, y, w, h, color = rect
         lcd.rect(x, y, w, h, 1)
 
 
