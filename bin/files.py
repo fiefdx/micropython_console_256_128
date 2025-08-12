@@ -116,6 +116,13 @@ class Explorer(object):
             self.cursor_x = len(self.new_name)
             self.shell.enable_cursor = True
 
+    def rename(self):
+        if self.mode == "":
+            self.mode = "rename"
+            self.new_name = self.cache[self.cursor_row][0]
+            self.cursor_x = len(self.new_name)
+            self.shell.enable_cursor = True
+
     def get_frame(self):
         path = self.path
         if len(path) > 42:
@@ -176,6 +183,15 @@ class Explorer(object):
             clean_pointer = [[1, self.previous_cursor_row * 7 + 7, 254, 8, 0], [1, self.cursor_row * 7 + 7, 254, 8, 0]]
             pointer = [[0, 7, 256, 8, 1]]
             contents.append({"s": self.new_name, "c": " ", "x": 3, "y": 8})
+        elif self.mode == "rename":
+            for i in range(self.page_size):
+                frame.append("")
+            frame[0] = " " * 17 + "Rename"
+            frame[1] = self.new_name
+            border_lines = [[191, 8, 191, 118, 0], [203, 8, 203, 118, 0]]
+            clean_pointer = [[1, self.previous_cursor_row * 7 + 7, 254, 8, 0], [1, self.cursor_row * 7 + 7, 254, 8, 0]]
+            pointer = [[0, 7, 256, 8, 1]]
+            contents.append({"s": self.new_name, "c": " ", "x": 3, "y": 8})
         data = {
             "render": (("clean_pointer", "rects"), ("borders", "rects"), ("border_lines", "lines"), ("status", "texts"), ("pointer", "rects"), ("contents", "texts")),
             "frame": frame,
@@ -198,6 +214,31 @@ class Explorer(object):
 
     def set_cursor_color(self, c):
         self.cursor_color = c
+
+    def edit_new_name(self, c):
+        if c == "\b":
+            delete_before = self.new_name[:self.cursor_x]
+            if len(delete_before) > 0:
+                self.new_name = self.new_name[:self.cursor_x - 1] + self.new_name[self.cursor_x:]
+                self.cursor_x -= 1
+        elif c == "LT":
+            self.cursor_x -= 1
+            if self.cursor_x <= 0:
+                self.cursor_x = 0
+        elif c == "RT":
+            self.cursor_x += 1
+            if self.cursor_x >= len(self.new_name):
+                self.cursor_x = len(self.new_name)
+        elif c == "BB":
+            self.mode = ""
+            self.shell.enable_cursor = False
+        else:
+            if len(c) == 1:
+                if len(self.new_name) < self.name_length_limit:
+                    self.new_name = self.new_name[:self.cursor_x] + c + self.new_name[self.cursor_x:]
+                    self.cursor_x += 1
+                    if self.cursor_x >= self.name_length_limit:
+                        self.cursor_x = self.name_length_limit
 
     def input_char(self, c):
         if self.mode == "":
@@ -258,6 +299,8 @@ class Explorer(object):
                 self.cut()
             elif c == "Ctrl-V":
                 self.paste()
+            elif c == "n":
+                self.rename()
         elif self.mode == "cf" or self.mode == "cd":
             if c == "\n" or c == "BA":
                 new_name = self.new_name.strip()
@@ -280,29 +323,8 @@ class Explorer(object):
                         self.shell.enable_cursor = False
                     else:
                         self.warning = "folder exists"
-            elif c == "\b":
-                delete_before = self.new_name[:self.cursor_x]
-                if len(delete_before) > 0:
-                    self.new_name = self.new_name[:self.cursor_x - 1] + self.new_name[self.cursor_x:]
-                    self.cursor_x -= 1
-            elif c == "LT":
-                self.cursor_x -= 1
-                if self.cursor_x <= 0:
-                    self.cursor_x = 0
-            elif c == "RT":
-                self.cursor_x += 1
-                if self.cursor_x >= len(self.new_name):
-                    self.cursor_x = len(self.new_name)
-            elif c == "BB":
-                self.mode = ""
-                self.shell.enable_cursor = False
             else:
-                if len(c) == 1:
-                    if len(self.new_name) < self.name_length_limit:
-                        self.new_name = self.new_name[:self.cursor_x] + c + self.new_name[self.cursor_x:]
-                        self.cursor_x += 1
-                        if self.cursor_x >= self.name_length_limit:
-                            self.cursor_x = self.name_length_limit
+                self.edit_new_name(c)
         elif self.mode == "rm":
             if c == "y":
                 if len(self.cache) > self.cursor_row:
@@ -323,7 +345,6 @@ class Explorer(object):
                         elif len(self.cache) == self.cursor_row:
                             self.previous_cursor_row = self.cursor_row
                             self.cursor_row = len(self.cache) - 1
-
                 self.mode = ""
             elif c == "n":
                 self.mode = ""
@@ -351,29 +372,28 @@ class Explorer(object):
                         self.warning = "source not exists"
                 else:
                     self.warning = "invalid name"
-            elif c == "\b":
-                delete_before = self.new_name[:self.cursor_x]
-                if len(delete_before) > 0:
-                    self.new_name = self.new_name[:self.cursor_x - 1] + self.new_name[self.cursor_x:]
-                    self.cursor_x -= 1
-            elif c == "LT":
-                self.cursor_x -= 1
-                if self.cursor_x <= 0:
-                    self.cursor_x = 0
-            elif c == "RT":
-                self.cursor_x += 1
-                if self.cursor_x >= len(self.new_name):
-                    self.cursor_x = len(self.new_name)
-            elif c == "BB":
-                self.mode = ""
-                self.shell.enable_cursor = False
             else:
-                if len(c) == 1:
-                    if len(self.new_name) < self.name_length_limit:
-                        self.new_name = self.new_name[:self.cursor_x] + c + self.new_name[self.cursor_x:]
-                        self.cursor_x += 1
-                        if self.cursor_x >= self.name_length_limit:
-                            self.cursor_x = self.name_length_limit
+                self.edit_new_name(c)
+        elif self.mode == "rename":
+            if c == "\n" or c == "BA":
+                new_name = self.new_name.strip()
+                if new_name != "":
+                    source = path_join(self.path, self.cache[self.cursor_row][0])
+                    target = path_join(self.path, new_name)
+                    if exists(source):
+                        if not exists(target):
+                            os.rename(source, target)
+                            self.mode = ""
+                            self.load(force = True)
+                            self.shell.enable_cursor = False
+                        else:
+                            self.warning = "name exists"
+                    else:
+                        self.warning = "source not exists"
+                else:
+                    self.warning = "invalid name"
+            else:
+                self.edit_new_name(c)
 
 
 def main(*args, **kwargs):
