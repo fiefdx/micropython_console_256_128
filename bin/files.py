@@ -3,7 +3,7 @@ import uos
 from math import ceil
 
 from scheduler import Condition, Message
-from common import exists, path_join, get_size, path_split, mkdirs
+from common import exists, path_join, get_size, path_split, mkdirs, rmtree
 
 coroutine = True
 
@@ -30,6 +30,7 @@ class Explorer(object):
         self.new_name = ""
         self.name_length_limit = 42
         self.cursor_color = 1
+        self.warning = ""
         self.load()
 
     def load(self, force = False):
@@ -50,6 +51,8 @@ class Explorer(object):
                 self.total_pages = ceil(self.total / self.page_size)
                 if not force:
                     self.current_page = 0
+                    self.previous_cursor_row = self.cursor_row
+                    self.cursor_row = 0
                 self.cache.clear()
             n = 0
             end = False
@@ -78,18 +81,25 @@ class Explorer(object):
                             break
 
     def create_file(self):
-        if self.mode != "cf":
+        if self.mode == "":
             self.mode = "cf"
             self.new_name = ""
             self.cursor_x = 0
             self.shell.enable_cursor = True
 
     def create_dir(self):
-        if self.mode != "cd":
+        if self.mode == "":
             self.mode = "cd"
             self.new_name = ""
             self.cursor_x = 0
             self.shell.enable_cursor = True
+
+    def remove(self):
+        if len(self.cache) > self.cursor_row:
+            if self.mode == "":
+                self.mode = "rm"
+        else:
+            self.warning = "nothing to delete"
 
     def get_frame(self):
         path = self.path
@@ -97,6 +107,7 @@ class Explorer(object):
             n = len(path) - 42 + 3
             path = self.path[:22 - ceil(n/2)] + "..." + self.path[22 + int(n/2):]
         frame = [path]
+        contents = []
         if self.mode == "":
             for f in self.cache:
                 name = f[0]
@@ -128,14 +139,33 @@ class Explorer(object):
             border_lines = [[191, 8, 191, 118, 0], [203, 8, 203, 118, 0]]
             clean_pointer = [[1, self.previous_cursor_row * 7 + 7, 254, 8, 0], [1, self.cursor_row * 7 + 7, 254, 8, 0]]
             pointer = [[0, 7, 256, 8, 1]]
+        elif self.mode == "rm":
+            for i in range(self.page_size):
+                frame.append("")
+            target = self.cache[self.cursor_row]
+            if target[1] == "F":
+                frame[0] = " " * 15 + "Delete File"
+            else:
+                frame[0] = " " * 14 + "Delete Folder"
+            border_lines = [[191, 8, 191, 118, 0], [203, 8, 203, 118, 0]]
+            clean_pointer = [[1, self.previous_cursor_row * 7 + 7, 254, 8, 0], [1, self.cursor_row * 7 + 7, 254, 8, 0]]
+            pointer = [[0, 7, 256, 8, 1]]
+            contents = [
+                {"s": "Are you sure you want to delete it? [y/n]", "c": " ", "x": 3, "y": 15},
+                {"s": target[0], "c": " ", "x": 3, "y": 8},
+            ]
         data = {
-            "render": (("clean_pointer", "rects"), ("borders", "rects"), ("border_lines", "lines"), ("status", "texts"), ("pointer", "rects")),
+            "render": (("clean_pointer", "rects"), ("borders", "rects"), ("border_lines", "lines"), ("status", "texts"), ("pointer", "rects"), ("contents", "texts")),
             "frame": frame,
             "clean_pointer": clean_pointer,
             "pointer": pointer,
             "borders": [[0, 0, 256, 8, 1], [0, 0, 256, 128, 1], [0, 119, 256, 9, 1]],
             "border_lines": border_lines,
-            "status": [{"s": "%s/%s/%s" % (self.current_page + 1, self.total_pages, self.total), "c": " ", "x": 3, "y": 120}]
+            "contents": contents,
+            "status": [
+                {"s": "%s/%s/%s" % (self.current_page + 1, self.total_pages, self.total), "c": " ", "x": 3, "y": 120},
+                {"s": self.warning, "c": " ", "x": 70, "y": 120}
+            ]
         }
         if self.shell.enable_cursor:
             data["cursor"] = self.get_cursor_position(1)
@@ -197,6 +227,8 @@ class Explorer(object):
                 self.create_file()
             elif c == "d":
                 self.create_dir()
+            elif c == "r":
+                self.remove()
         elif self.mode == "cf" or self.mode == "cd":
             if c == "\n" or c == "BA":
                 new_name = self.new_name.strip()
@@ -242,6 +274,30 @@ class Explorer(object):
                         self.cursor_x += 1
                         if self.cursor_x >= self.name_length_limit:
                             self.cursor_x = self.name_length_limit
+        elif self.mode == "rm":
+            if c == "y":
+                if len(self.cache) > self.cursor_row:
+                    target = self.cache[self.cursor_row]
+                    path = path_join(self.path, target[0])
+                    n = 0
+                    if exists(path):
+                        for p in rmtree(path):
+                            n += 1
+                        self.warning = "delete %s files/folders!" % n
+                        self.load(force = True)
+                        if len(self.cache) == 0:
+                            self.previous_cursor_row = self.cursor_row
+                            self.cursor_row = 0
+                        elif len(self.cache) < self.cursor_row:
+                            self.previous_cursor_row = self.cursor_row
+                            self.cursor_row = len(self.cache) - 1
+                        elif len(self.cache) == self.cursor_row:
+                            self.previous_cursor_row = self.cursor_row
+                            self.cursor_row = len(self.cache) - 1
+
+                self.mode = ""
+            elif c == "n":
+                self.mode = ""
 
 
 def main(*args, **kwargs):
