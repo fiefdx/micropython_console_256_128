@@ -230,7 +230,7 @@ class Explorer(object):
             self.cursor_x += 1
             if self.cursor_x >= len(self.new_name):
                 self.cursor_x = len(self.new_name)
-        elif c == "BB":
+        elif c == "BB" or c == "ES":
             self.mode = ""
             self.shell.enable_cursor = False
         else:
