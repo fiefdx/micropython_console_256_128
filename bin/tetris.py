@@ -590,8 +590,8 @@ def main(*args, **kwargs):
                 Message.get().load({
                     "render": (("rects", "rects"),),
                     "rects": [
-                        [offset_x - 1, offset_y - 1, 62, 122],
-                        [165, 28, 26, 26],
+                        [offset_x - 1, offset_y - 1, 62, 122, 1],
+                        [165, 28, 26, 26, 1],
                 ]}, receiver = display_id)
             ])
             yield Condition.get().load(sleep = frame_interval, wait_msg = False, send_msgs = [

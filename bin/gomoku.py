@@ -359,8 +359,8 @@ class Game(object):
         offset_y = 5
         lines = []
         for i in range(15):
-            lines.append([offset_x + 3 + i * 8, offset_y, offset_x + 3 + i * 8, 123, True])
-            lines.append([offset_x, offset_y + 3 + i * 8, offset_x + 118, offset_y + 3 + i * 8, True])
+            lines.append([offset_x + 3 + i * 8, offset_y, offset_x + 3 + i * 8, 123, 1])
+            lines.append([offset_x, offset_y + 3 + i * 8, offset_x + 118, offset_y + 3 + i * 8, 1])
         turn = "-turn"
         if self.mode == "black" and self.turn == self.white:
             turn = "-thinking"
@@ -387,13 +387,13 @@ class Game(object):
                  # {"s": "black: %d/%d  " % (self.think[self.black], self.think_games), "c": " ", "x": 136, "y": 98},
                  # {"s": "white: %d/%d  " % (self.think[self.white], self.think_games), "c": " ", "x": 136, "y": 106},
                  # {"s": "tie:   %d/%d  " % (self.think[self.empty], self.think_games), "c": " ", "x": 136, "y": 114},]
-        cursor = [int(offset_x + self.cx * 8), int(offset_y + self.cy * 8), 7, 7]
-        rects = [[8, 4, 121, 121],
-                 [5, 1, 246, 127],
-                 [131, 4, 117, 63],
-                 [131, 4, 117, 18],
-                 [131, 69, 117, 56],
-                 [131, 69, 117, 18]]
+        cursor = [int(offset_x + self.cx * 8), int(offset_y + self.cy * 8), 7, 7, 1]
+        rects = [[8, 4, 121, 121, 1],
+                 [5, 1, 246, 127, 1],
+                 [131, 4, 117, 63, 1],
+                 [131, 4, 117, 18, 1],
+                 [131, 69, 117, 56, 1],
+                 [131, 69, 117, 18, 1]]
         return {
             "render": (("rects", "rects"), ("lines", "lines"), ("tiles", "tiles"), ("texts", "texts"), ("pointer", "rects")),
             "tiles": {
