@@ -157,10 +157,8 @@ class Explorer(object):
             border_lines = [[191, 8, 191, 118, 0], [203, 8, 203, 118, 0]]
             clean_pointer = [[1, self.previous_cursor_row * 7 + 7, 254, 8, 0], [1, self.cursor_row * 7 + 7, 254, 8, 0]]
             pointer = [[0, 7, 256, 8, 1]]
-            contents = [
-                {"s": "Are you sure you want to delete it? [y/n]", "c": " ", "x": 3, "y": 15},
-                {"s": target[0], "c": " ", "x": 3, "y": 8},
-            ]
+            contents.append({"s": "Are you sure you want to delete it? [y/n]", "c": " ", "x": 3, "y": 15})
+            contents.append({"s": target[0], "c": " ", "x": 3, "y": 8})
         data = {
             "render": (("clean_pointer", "rects"), ("borders", "rects"), ("border_lines", "lines"), ("status", "texts"), ("pointer", "rects"), ("contents", "texts")),
             "frame": frame,

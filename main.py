@@ -124,8 +124,9 @@ def render_texts(name, msg, wri, lcd):
         y = text["y"]
         c = text["c"]
         s = text["s"]
+        color = text["C"] if "C" in text else 0
         Writer.set_textpos(lcd, y, x)
-        wri.printstring(s, 0)
+        wri.printstring(s, color)
 
 
 def render_lines(name, msg, lcd):
