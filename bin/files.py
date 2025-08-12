@@ -1,17 +1,19 @@
 import sys
 import uos
+from math import ceil
 
 from scheduler import Condition, Message
-from common import exists, path_join, get_size, path_split
+from common import exists, path_join, get_size, path_split, mkdirs
 
 coroutine = True
 
 
 class Explorer(object):
-    def __init__(self, path = "/"):
+    def __init__(self, path = "/", shell = None):
         if len(path) > 1 and path.endswith("/"):
             path = path[:-1]
         self.path = path
+        self.shell = shell
         self.pwd = None
         self.current_page = 0
         self.page_size = 16
@@ -22,12 +24,18 @@ class Explorer(object):
         self.total = 0
         self.cursor_row = 0
         self.previous_cursor_row = 0
+        self.cursor_x = 0
+        self.cursor_y = 1
+        self.mode = ""
+        self.new_name = ""
+        self.name_length_limit = 42
+        self.cursor_color = 1
         self.load()
 
-    def load(self):
+    def load(self, force = False):
         if exists(self.path):
             fs = uos.listdir(self.path)
-            if self.pwd != self.path:
+            if self.pwd != self.path or force:
                 self.files = 0
                 self.dirs = 0
                 for f in fs:
@@ -39,8 +47,9 @@ class Explorer(object):
                         self.files += 1
                 self.pwd = self.path
                 self.total = self.dirs + self.files
-                self.total_pages = round(self.total / self.page_size)
-                self.current_page = 0
+                self.total_pages = ceil(self.total / self.page_size)
+                if not force:
+                    self.current_page = 0
                 self.cache.clear()
             n = 0
             end = False
@@ -68,68 +77,171 @@ class Explorer(object):
                         if n == (self.current_page + 1) * self.page_size:
                             break
 
+    def create_file(self):
+        if self.mode != "cf":
+            self.mode = "cf"
+            self.new_name = ""
+            self.cursor_x = 0
+            self.shell.enable_cursor = True
+
+    def create_dir(self):
+        if self.mode != "cd":
+            self.mode = "cd"
+            self.new_name = ""
+            self.cursor_x = 0
+            self.shell.enable_cursor = True
+
     def get_frame(self):
-        frame = ["%s T     Size" % ("Name" + " " * 27)]
-        for f in self.cache:
-            name = f[0]
-            if len(name) > 31:
-                ext = name.split(".")[-1]
-                if len(ext) > 0:
-                    ext = "." + ext
-                    name = name[:-len(ext)]
-                    name = name[:-(len(name) - (31 - len(ext)) + 3)] + "..." + ext
-            else:
-                name += " " * (31 - len(name))
-            frame.append("%31s %s %s" % (name, f[1], f[2]))
-        return {
-            "render": (("pointer", "rects"), ("borders", "rects"), ("border_lines", "lines"), ("status", "texts")),
+        path = self.path
+        if len(path) > 42:
+            n = len(path) - 42 + 3
+            path = self.path[:22 - ceil(n/2)] + "..." + self.path[22 + int(n/2):]
+        frame = [path]
+        if self.mode == "":
+            for f in self.cache:
+                name = f[0]
+                if len(name) > 31:
+                    ext = name.split(".")[-1]
+                    if len(ext) > 0:
+                        ext = "." + ext
+                        name = name[:-len(ext)]
+                        name = name[:-(len(name) - (31 - len(ext)) + 3)] + "..." + ext
+                else:
+                    name += " " * (31 - len(name))
+                frame.append("%31s %s %s" % (name, f[1], f[2]))
+            border_lines = [[191, 8, 191, 118, 1], [203, 8, 203, 118, 1]]
+            clean_pointer = [[1, self.previous_cursor_row * 7 + 7, 254, 8, 0], [0, 7, 256, 8, 0]]
+            pointer = [[1, self.cursor_row * 7 + 7, 254, 8, 1]]
+        elif self.mode == "cf":
+            for i in range(self.page_size):
+                frame.append("")
+            frame[0] = " " * 17 + "New File"
+            frame[1] = self.new_name
+            border_lines = [[191, 8, 191, 118, 0], [203, 8, 203, 118, 0]]
+            clean_pointer = [[1, self.previous_cursor_row * 7 + 7, 254, 8, 0], [1, self.cursor_row * 7 + 7, 254, 8, 0]]
+            pointer = [[0, 7, 256, 8, 1]]
+        elif self.mode == "cd":
+            for i in range(self.page_size):
+                frame.append("")
+            frame[0] = " " * 16 + "New Folder"
+            frame[1] = self.new_name
+            border_lines = [[191, 8, 191, 118, 0], [203, 8, 203, 118, 0]]
+            clean_pointer = [[1, self.previous_cursor_row * 7 + 7, 254, 8, 0], [1, self.cursor_row * 7 + 7, 254, 8, 0]]
+            pointer = [[0, 7, 256, 8, 1]]
+        data = {
+            "render": (("clean_pointer", "rects"), ("borders", "rects"), ("border_lines", "lines"), ("status", "texts"), ("pointer", "rects")),
             "frame": frame,
-            "pointer": [[1, self.previous_cursor_row * 7 + 7, 254, 8, 0], [1, self.cursor_row * 7 + 7, 254, 8, 1]],
+            "clean_pointer": clean_pointer,
+            "pointer": pointer,
             "borders": [[0, 0, 256, 8, 1], [0, 0, 256, 128, 1], [0, 119, 256, 9, 1]],
-            "border_lines": [[191, 0, 191, 119, 1], [203, 0, 203, 119, 1]],
+            "border_lines": border_lines,
             "status": [{"s": "%s/%s/%s" % (self.current_page + 1, self.total_pages, self.total), "c": " ", "x": 3, "y": 120}]
         }
+        if self.shell.enable_cursor:
+            data["cursor"] = self.get_cursor_position(1)
+        return data
+
+    def get_cursor_position(self, c = None):
+        return self.cursor_x, self.cursor_y, self.cursor_color if c is None else c
+
+    def set_cursor_color(self, c):
+        self.cursor_color = c
 
     def input_char(self, c):
-        if c == "UP":
-            self.previous_cursor_row = self.cursor_row
-            self.cursor_row -= 1
-            if self.cursor_row <= 0:
-                self.cursor_row = 0
-        elif c == "DN":
-            self.previous_cursor_row = self.cursor_row
-            self.cursor_row += 1
-            if self.cursor_row >= self.page_size:
-                self.cursor_row = self.page_size - 1
-        elif c == "LT":
-            self.previous_current_page = self.current_page
-            self.current_page -= 1
-            if self.current_page <= 0:
-                self.current_page = 0
-            if self.previous_current_page != self.current_page:
-                self.load()
-        elif c == "RT":
-            self.previous_current_page = self.current_page
-            self.current_page += 1
-            if self.current_page >= self.total_pages:
-                self.current_page = self.total_pages - 1
-            if self.previous_current_page != self.current_page:
-                self.load()
-        elif c == "\n" or c == "BA":
-            f = self.cache[self.cursor_row]
-            if f[1] == "D":
-                self.path = path_join(self.path, f[0])
-                self.load()
-                self.pwd = self.path
-        elif c == "\b" or c == "BB":
-            parent, current = path_split(self.path)
-            if parent == "":
-                parent = "/"
-            if self.path != parent:
-                self.path = parent
-                self.load()
-                self.pwd = self.path
-
+        if self.mode == "":
+            if c == "UP":
+                self.previous_cursor_row = self.cursor_row
+                self.cursor_row -= 1
+                if self.cursor_row <= 0:
+                    self.cursor_row = 0
+            elif c == "DN":
+                self.previous_cursor_row = self.cursor_row
+                self.cursor_row += 1
+                if self.cursor_row >= len(self.cache):
+                    self.cursor_row = len(self.cache) - 1
+                    if self.cursor_row <= 0:
+                        self.cursor_row = 0
+            elif c == "LT":
+                self.previous_current_page = self.current_page
+                self.current_page -= 1
+                if self.current_page <= 0:
+                    self.current_page = 0
+                if self.previous_current_page != self.current_page:
+                    self.load()
+            elif c == "RT":
+                self.previous_current_page = self.current_page
+                self.current_page += 1
+                if self.current_page >= self.total_pages:
+                    self.current_page = self.total_pages - 1
+                if self.previous_current_page != self.current_page:
+                    self.load()
+                    if self.cursor_row >= len(self.cache):
+                        self.previous_cursor_row = self.cursor_row
+                        self.cursor_row = len(self.cache) - 1
+            elif c == "\n" or c == "BA":
+                if len(self.cache) > self.cursor_row:
+                    f = self.cache[self.cursor_row]
+                    if f[1] == "D":
+                        self.path = path_join(self.path, f[0])
+                        self.load()
+                        self.pwd = self.path
+            elif c == "\b" or c == "BB":
+                parent, current = path_split(self.path)
+                if parent == "":
+                    parent = "/"
+                if self.path != parent:
+                    self.path = parent
+                    self.load()
+                    self.pwd = self.path
+            elif c == "f":
+                self.create_file()
+            elif c == "d":
+                self.create_dir()
+        elif self.mode == "cf" or self.mode == "cd":
+            if c == "\n" or c == "BA":
+                new_name = self.new_name.strip()
+                if self.mode == "cf" and new_name != "":
+                    path = path_join(self.path, new_name)
+                    if not exists(path):
+                        with open(path, "w") as fp:
+                            pass
+                        self.mode = ""
+                        self.load(force = True)
+                        self.shell.enable_cursor = False
+                    else:
+                        self.warning = "file exists!"
+                elif self.mode == "cd" and new_name != "":
+                    path = path_join(self.path, new_name)
+                    if not exists(path):
+                        mkdirs(path)
+                        self.mode = ""
+                        self.load(force = True)
+                        self.shell.enable_cursor = False
+                    else:
+                        self.warning = "folder exists!"
+            elif c == "\b":
+                delete_before = self.new_name[:self.cursor_x]
+                if len(delete_before) > 0:
+                    self.new_name = self.new_name[:self.cursor_x - 1] + self.new_name[self.cursor_x:]
+                    self.cursor_x -= 1
+            elif c == "LT":
+                self.cursor_x -= 1
+                if self.cursor_x <= 0:
+                    self.cursor_x = 0
+            elif c == "RT":
+                self.cursor_x += 1
+                if self.cursor_x >= len(self.new_name):
+                    self.cursor_x = len(self.new_name)
+            elif c == "BB":
+                self.mode = ""
+                self.shell.enable_cursor = False
+            else:
+                if len(c) == 1:
+                    if len(self.new_name) < self.name_length_limit:
+                        self.new_name = self.new_name[:self.cursor_x] + c + self.new_name[self.cursor_x:]
+                        self.cursor_x += 1
+                        if self.cursor_x >= self.name_length_limit:
+                            self.cursor_x = self.name_length_limit
 
 
 def main(*args, **kwargs):
@@ -149,7 +261,8 @@ def main(*args, **kwargs):
         if len(path) > 1 and path.endswith("/"):
             path = path[:-1]
         if exists(path):
-            explorer = Explorer(path)
+            explorer = Explorer(path, shell)
+            shell.current_shell = explorer
             yield Condition.get().load(sleep = 0, wait_msg = True, send_msgs = [
                 Message.get().load(explorer.get_frame(), receiver = display_id)
             ])
