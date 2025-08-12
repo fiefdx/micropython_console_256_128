@@ -33,6 +33,7 @@ class Explorer(object):
         self.warning = ""
         self.status = ""
         self.copied_item = None
+        self.quit = 0
         self.load()
 
     def load(self, force = False):
@@ -420,7 +421,13 @@ def main(*args, **kwargs):
             ])
             msg = task.get_message()
             c = msg.content["msg"]
-            while c != "ES":
+            while explorer.quit < 3:
+                if c == "ES":
+                    explorer.quit += 1
+                    if explorer.quit == 3:
+                        break
+                else:
+                    explorer.quit = 0
                 explorer.input_char(c)
                 msg.release()
                 yield Condition.get().load(sleep = 0, wait_msg = True, send_msgs = [
