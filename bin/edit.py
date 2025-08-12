@@ -40,7 +40,7 @@ class EditShell(object):
             f = open(self.file_path, "w")
             f.close()
         self.file = open(self.file_path, "r")
-        self.status = "saved"
+        self.status = "loading"
         self.exit_count = 0
         
     def input_char(self, c):
@@ -168,6 +168,7 @@ class EditShell(object):
                 yield int(pos * 100 / size)
         self.total_lines = n
         self.file.close()
+        self.status = "saved"
         yield 100
         
     def exists_line(self, line_num):
