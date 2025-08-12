@@ -22,8 +22,8 @@ class Explorer(object):
         self.files = 0
         self.dirs = 0
         self.total = 0
-        self.cursor_row = 0
-        self.previous_cursor_row = 0
+        self.pointer_row = 0
+        self.previous_pointer_row = 0
         self.cursor_x = 0
         self.cursor_y = 1
         self.mode = ""
@@ -52,8 +52,8 @@ class Explorer(object):
                 self.total_pages = ceil(self.total / self.page_size)
                 if not force:
                     self.current_page = 0
-                    self.previous_cursor_row = self.cursor_row
-                    self.cursor_row = 0
+                    self.previous_pointer_row = self.pointer_row
+                    self.pointer_row = 0
                 self.cache.clear()
             n = 0
             end = False
@@ -95,7 +95,7 @@ class Explorer(object):
             self.shell.enable_cursor = True
 
     def remove(self):
-        if len(self.cache) > self.cursor_row:
+        if len(self.cache) > self.pointer_row:
             if self.mode == "":
                 self.mode = "rm"
         else:
@@ -103,11 +103,11 @@ class Explorer(object):
 
     def copy(self):
         self.status = "copied"
-        self.copied_item = (self.cache[self.cursor_row], self.path)
+        self.copied_item = (self.cache[self.pointer_row], self.path)
 
     def cut(self):
         self.status = "cutted"
-        self.copied_item = (self.cache[self.cursor_row], self.path)
+        self.copied_item = (self.cache[self.pointer_row], self.path)
 
     def paste(self):
         if self.mode == "" and (self.status == "copied" or self.status == "cutted"):
@@ -119,7 +119,7 @@ class Explorer(object):
     def rename(self):
         if self.mode == "":
             self.mode = "rename"
-            self.new_name = self.cache[self.cursor_row][0]
+            self.new_name = self.cache[self.pointer_row][0]
             self.cursor_x = len(self.new_name)
             self.shell.enable_cursor = True
 
@@ -143,15 +143,15 @@ class Explorer(object):
                     name += " " * (31 - len(name))
                 frame.append("%31s %s %s" % (name, f[1], f[2]))
             border_lines = [[191, 8, 191, 118, 1], [203, 8, 203, 118, 1]]
-            clean_pointer = [[1, self.previous_cursor_row * 7 + 7, 254, 8, 0], [0, 7, 256, 8, 0]]
-            pointer = [[1, self.cursor_row * 7 + 7, 254, 8, 1]]
+            clean_pointer = [[1, self.previous_pointer_row * 7 + 7, 254, 8, 0], [0, 7, 256, 8, 0]]
+            pointer = [[1, self.pointer_row * 7 + 7, 254, 8, 1]]
         elif self.mode == "cf":
             for i in range(self.page_size):
                 frame.append("")
             frame[0] = " " * 17 + "New File"
             frame[1] = self.new_name
             border_lines = [[191, 8, 191, 118, 0], [203, 8, 203, 118, 0]]
-            clean_pointer = [[1, self.previous_cursor_row * 7 + 7, 254, 8, 0], [1, self.cursor_row * 7 + 7, 254, 8, 0]]
+            clean_pointer = [[1, self.previous_pointer_row * 7 + 7, 254, 8, 0], [1, self.pointer_row * 7 + 7, 254, 8, 0]]
             pointer = [[0, 7, 256, 8, 1]]
         elif self.mode == "cd":
             for i in range(self.page_size):
@@ -159,18 +159,18 @@ class Explorer(object):
             frame[0] = " " * 16 + "New Folder"
             frame[1] = self.new_name
             border_lines = [[191, 8, 191, 118, 0], [203, 8, 203, 118, 0]]
-            clean_pointer = [[1, self.previous_cursor_row * 7 + 7, 254, 8, 0], [1, self.cursor_row * 7 + 7, 254, 8, 0]]
+            clean_pointer = [[1, self.previous_pointer_row * 7 + 7, 254, 8, 0], [1, self.pointer_row * 7 + 7, 254, 8, 0]]
             pointer = [[0, 7, 256, 8, 1]]
         elif self.mode == "rm":
             for i in range(self.page_size):
                 frame.append("")
-            target = self.cache[self.cursor_row]
+            target = self.cache[self.pointer_row]
             if target[1] == "F":
                 frame[0] = " " * 15 + "Delete File"
             else:
                 frame[0] = " " * 14 + "Delete Folder"
             border_lines = [[191, 8, 191, 118, 0], [203, 8, 203, 118, 0]]
-            clean_pointer = [[1, self.previous_cursor_row * 7 + 7, 254, 8, 0], [1, self.cursor_row * 7 + 7, 254, 8, 0]]
+            clean_pointer = [[1, self.previous_pointer_row * 7 + 7, 254, 8, 0], [1, self.pointer_row * 7 + 7, 254, 8, 0]]
             pointer = [[0, 7, 256, 8, 1]]
             contents.append({"s": "Are you sure you want to delete it? [y/n]", "c": " ", "x": 3, "y": 15})
             contents.append({"s": target[0], "c": " ", "x": 3, "y": 8})
@@ -180,7 +180,7 @@ class Explorer(object):
             frame[0] = " " * 18 + "Paste"
             frame[1] = self.new_name
             border_lines = [[191, 8, 191, 118, 0], [203, 8, 203, 118, 0]]
-            clean_pointer = [[1, self.previous_cursor_row * 7 + 7, 254, 8, 0], [1, self.cursor_row * 7 + 7, 254, 8, 0]]
+            clean_pointer = [[1, self.previous_pointer_row * 7 + 7, 254, 8, 0], [1, self.pointer_row * 7 + 7, 254, 8, 0]]
             pointer = [[0, 7, 256, 8, 1]]
             contents.append({"s": self.new_name, "c": " ", "x": 3, "y": 8})
         elif self.mode == "rename":
@@ -189,7 +189,7 @@ class Explorer(object):
             frame[0] = " " * 17 + "Rename"
             frame[1] = self.new_name
             border_lines = [[191, 8, 191, 118, 0], [203, 8, 203, 118, 0]]
-            clean_pointer = [[1, self.previous_cursor_row * 7 + 7, 254, 8, 0], [1, self.cursor_row * 7 + 7, 254, 8, 0]]
+            clean_pointer = [[1, self.previous_pointer_row * 7 + 7, 254, 8, 0], [1, self.pointer_row * 7 + 7, 254, 8, 0]]
             pointer = [[0, 7, 256, 8, 1]]
             contents.append({"s": self.new_name, "c": " ", "x": 3, "y": 8})
         data = {
@@ -244,17 +244,17 @@ class Explorer(object):
         if self.mode == "":
             self.warning = ""
             if c == "UP" or c == "SUP":
-                self.previous_cursor_row = self.cursor_row
-                self.cursor_row -= 1
-                if self.cursor_row <= 0:
-                    self.cursor_row = 0
+                self.previous_pointer_row = self.pointer_row
+                self.pointer_row -= 1
+                if self.pointer_row <= 0:
+                    self.pointer_row = 0
             elif c == "DN" or c == "SDN":
-                self.previous_cursor_row = self.cursor_row
-                self.cursor_row += 1
-                if self.cursor_row >= len(self.cache):
-                    self.cursor_row = len(self.cache) - 1
-                    if self.cursor_row <= 0:
-                        self.cursor_row = 0
+                self.previous_pointer_row = self.pointer_row
+                self.pointer_row += 1
+                if self.pointer_row >= len(self.cache):
+                    self.pointer_row = len(self.cache) - 1
+                    if self.pointer_row <= 0:
+                        self.pointer_row = 0
             elif c == "LT":
                 self.previous_current_page = self.current_page
                 self.current_page -= 1
@@ -269,12 +269,12 @@ class Explorer(object):
                     self.current_page = self.total_pages - 1
                 if self.previous_current_page != self.current_page:
                     self.load()
-                    if self.cursor_row >= len(self.cache):
-                        self.previous_cursor_row = self.cursor_row
-                        self.cursor_row = len(self.cache) - 1
+                    if self.pointer_row >= len(self.cache):
+                        self.previous_pointer_row = self.pointer_row
+                        self.pointer_row = len(self.cache) - 1
             elif c == "\n" or c == "BA":
-                if len(self.cache) > self.cursor_row:
-                    f = self.cache[self.cursor_row]
+                if len(self.cache) > self.pointer_row:
+                    f = self.cache[self.pointer_row]
                     if f[1] == "D":
                         self.path = path_join(self.path, f[0])
                         self.load()
@@ -327,8 +327,8 @@ class Explorer(object):
                 self.edit_new_name(c)
         elif self.mode == "rm":
             if c == "y":
-                if len(self.cache) > self.cursor_row:
-                    target = self.cache[self.cursor_row]
+                if len(self.cache) > self.pointer_row:
+                    target = self.cache[self.pointer_row]
                     path = path_join(self.path, target[0])
                     n = 0
                     if exists(path):
@@ -337,14 +337,14 @@ class Explorer(object):
                         self.warning = "delete %s items" % n
                         self.load(force = True)
                         if len(self.cache) == 0:
-                            self.previous_cursor_row = self.cursor_row
-                            self.cursor_row = 0
-                        elif len(self.cache) < self.cursor_row:
-                            self.previous_cursor_row = self.cursor_row
-                            self.cursor_row = len(self.cache) - 1
-                        elif len(self.cache) == self.cursor_row:
-                            self.previous_cursor_row = self.cursor_row
-                            self.cursor_row = len(self.cache) - 1
+                            self.previous_pointer_row = self.pointer_row
+                            self.pointer_row = 0
+                        elif len(self.cache) < self.pointer_row:
+                            self.previous_pointer_row = self.pointer_row
+                            self.pointer_row = len(self.cache) - 1
+                        elif len(self.cache) == self.pointer_row:
+                            self.previous_pointer_row = self.pointer_row
+                            self.pointer_row = len(self.cache) - 1
                 self.mode = ""
             elif c == "n":
                 self.mode = ""
@@ -378,7 +378,7 @@ class Explorer(object):
             if c == "\n" or c == "BA":
                 new_name = self.new_name.strip()
                 if new_name != "":
-                    source = path_join(self.path, self.cache[self.cursor_row][0])
+                    source = path_join(self.path, self.cache[self.pointer_row][0])
                     target = path_join(self.path, new_name)
                     if exists(source):
                         if not exists(target):
