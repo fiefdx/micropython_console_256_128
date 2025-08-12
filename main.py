@@ -252,7 +252,7 @@ def display(task, name, scheduler = None, display_cs = None, sd_cs = None, spi =
                                 lines[n] = clear_line
                     else:
                         lines = frame
-                    x = 1
+                    x = 3
                     if False and lines.count(False) < 9:
                         wri.clear_frame(18, 42, 0)
                         wri.printframe(frame, 0)
@@ -261,12 +261,12 @@ def display(task, name, scheduler = None, display_cs = None, sd_cs = None, spi =
                         for n, l in enumerate(lines):
                             if l:
                                 if l == clear_line:
-                                    Writer.set_textpos(lcd, n * 7, x)
+                                    Writer.set_textpos(lcd, n * 7 + 1, x)
                                     wri.clear_line(42, 0)
                                 else:
-                                    Writer.set_textpos(lcd, n * 7, x)
+                                    Writer.set_textpos(lcd, n * 7 + 1, x)
                                     wri.clear_line(42, 0)
-                                    Writer.set_textpos(lcd, n * 7, x)
+                                    Writer.set_textpos(lcd, n * 7 + 1, x)
                                     wri.printstring(l, 0)
                         refresh = True
                     frame_previous = frame
@@ -276,15 +276,15 @@ def display(task, name, scheduler = None, display_cs = None, sd_cs = None, spi =
                     x, y, c = msg.content["cursor"]
                     if c == "hide":
                         #print("hide: ", x, y)
-                        lcd.line(x * 6, y * 7, x * 6, y * 7 + 5, 0)
+                        lcd.line(x * 6 + 2, y * 7 + 1, x * 6 + 2, y * 7 + 6, 0)
                     else:
                         # print("cursor: ", x, y, c)
                         if cursor_previous:
                             xp, yp, cp = cursor_previous
                             #if yp != y or xp > x:
-                            lcd.line(xp * 6, yp * 7, xp * 6, yp * 7 + 5, 0)
+                            lcd.line(xp * 6 + 2, yp * 7 + 1, xp * 6 + 2, yp * 7 + 6, 0)
                             #lcd.line(xp * 6, yp * 8, xp * 6, yp * 8 + 6, 0)
-                        lcd.line(x * 6, y * 7, x * 6, y * 7 + 5, c)
+                        lcd.line(x * 6 + 2, y * 7 + 1, x * 6 + 2, y * 7 + 6, c)
                         #lcd.line(x * 6, y * 8, x * 6, y * 8 + 6, c)
                         cursor_previous = [x, y, c]
                 if "keyboard_mode" in msg.content:
