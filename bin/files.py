@@ -4,6 +4,7 @@ from math import ceil
 
 from scheduler import Condition, Message
 from common import exists, path_join, get_size, path_split, mkdirs, rmtree, copy
+from bin.edit import EditShell
 
 coroutine = True
 
@@ -34,6 +35,7 @@ class Explorer(object):
         self.status = ""
         self.copied_item = None
         self.quit = 0
+        self.editor = None
         self.load()
 
     def load(self, force = False):
@@ -124,6 +126,25 @@ class Explorer(object):
             self.cursor_x = len(self.new_name)
             self.shell.enable_cursor = True
 
+    def edit(self, file_path):
+        if self.mode == "":
+            self.mode = "edit"
+            self.editor = EditShell(file_path)
+            self.shell.enable_cursor = True
+            
+    def get_editor_loading_frame(self, p):
+        frame = self.editor.get_loading_frame(p)
+        frame[0] = " " * 14 + "Editor Opening"
+        data = {
+            "render": (("clean_pointer", "rects"), ("borders", "rects"), ("border_lines", "lines")),
+            "frame": frame,
+            "cursor": self.editor.get_cursor_position(1),
+            "clean_pointer": [[1, self.previous_pointer_row * 7 + 7, 254, 8, 0], [1, self.pointer_row * 7 + 7, 254, 8, 0]],
+            "border_lines": [[188, 8, 188, 118, 0], [206, 8, 206, 118, 0]],
+            "borders": [[0, 0, 256, 8, 1], [0, 0, 256, 127, 1], [0, 119, 256, 8, 1]],
+        }
+        return data
+
     def get_frame(self):
         path = self.path
         if len(path) > 42:
@@ -131,6 +152,11 @@ class Explorer(object):
             path = self.path[:22 - ceil(n/2)] + "..." + self.path[22 + int(n/2):]
         frame = [path]
         contents = []
+        borders = [[0, 0, 256, 8, 1], [0, 0, 256, 127, 1], [0, 119, 256, 8, 1]]
+        status = [
+            {"s": "%s/%s/%s         " % (self.current_page + 1, self.total_pages, self.total), "c": " ", "x": 3, "y": 120},
+            {"s": "% 20s" % self.warning, "c": " ", "x": 135, "y": 120}
+        ]
         if self.mode == "":
             for f in self.cache:
                 name = f[0]
@@ -143,15 +169,22 @@ class Explorer(object):
                 else:
                     name += " " * (31 - len(name))
                 frame.append("%31s %s %s" % (name, f[1], f[2]))
-            border_lines = [[191, 8, 191, 118, 1], [203, 8, 203, 118, 1]]
+            border_lines = [[188, 8, 188, 118, 1], [206, 8, 206, 118, 1]]
             clean_pointer = [[1, self.previous_pointer_row * 7 + 7, 254, 8, 0], [0, 7, 256, 8, 0]]
             pointer = [[1, self.pointer_row * 7 + 7, 254, 8, 1]]
+        elif self.mode == "edit":
+            frame = self.editor.get_display_frame()
+            border_lines = [[188, 8, 188, 118, 0], [206, 8, 206, 118, 0]]
+            clean_pointer = [[1, self.previous_pointer_row * 7 + 7, 254, 8, 0], [1, self.pointer_row * 7 + 7, 254, 8, 0]]
+            borders[0] = [0, 0, 256, 8, 0]
+            pointer = []
+            status = []
         elif self.mode == "cf":
             for i in range(self.page_size):
                 frame.append("")
             frame[0] = " " * 17 + "New File"
             frame[1] = self.new_name
-            border_lines = [[191, 8, 191, 118, 0], [203, 8, 203, 118, 0]]
+            border_lines = [[188, 8, 188, 118, 0], [206, 8, 206, 118, 0]]
             clean_pointer = [[1, self.previous_pointer_row * 7 + 7, 254, 8, 0], [1, self.pointer_row * 7 + 7, 254, 8, 0]]
             pointer = [[0, 7, 256, 8, 1]]
         elif self.mode == "cd":
@@ -159,7 +192,7 @@ class Explorer(object):
                 frame.append("")
             frame[0] = " " * 16 + "New Folder"
             frame[1] = self.new_name
-            border_lines = [[191, 8, 191, 118, 0], [203, 8, 203, 118, 0]]
+            border_lines = [[188, 8, 188, 118, 0], [206, 8, 206, 118, 0]]
             clean_pointer = [[1, self.previous_pointer_row * 7 + 7, 254, 8, 0], [1, self.pointer_row * 7 + 7, 254, 8, 0]]
             pointer = [[0, 7, 256, 8, 1]]
         elif self.mode == "rm":
@@ -170,7 +203,7 @@ class Explorer(object):
                 frame[0] = " " * 15 + "Delete File"
             else:
                 frame[0] = " " * 14 + "Delete Folder"
-            border_lines = [[191, 8, 191, 118, 0], [203, 8, 203, 118, 0]]
+            border_lines = [[188, 8, 188, 118, 0], [206, 8, 206, 118, 0]]
             clean_pointer = [[1, self.previous_pointer_row * 7 + 7, 254, 8, 0], [1, self.pointer_row * 7 + 7, 254, 8, 0]]
             pointer = [[0, 7, 256, 8, 1]]
             contents.append({"s": "Are you sure you want to delete it? [y/n]", "c": " ", "x": 3, "y": 15})
@@ -180,7 +213,7 @@ class Explorer(object):
                 frame.append("")
             frame[0] = " " * 18 + "Paste"
             frame[1] = self.new_name
-            border_lines = [[191, 8, 191, 118, 0], [203, 8, 203, 118, 0]]
+            border_lines = [[188, 8, 188, 118, 0], [206, 8, 206, 118, 0]]
             clean_pointer = [[1, self.previous_pointer_row * 7 + 7, 254, 8, 0], [1, self.pointer_row * 7 + 7, 254, 8, 0]]
             pointer = [[0, 7, 256, 8, 1]]
             contents.append({"s": self.new_name, "c": " ", "x": 3, "y": 8})
@@ -189,7 +222,7 @@ class Explorer(object):
                 frame.append("")
             frame[0] = " " * 17 + "Rename"
             frame[1] = self.new_name
-            border_lines = [[191, 8, 191, 118, 0], [203, 8, 203, 118, 0]]
+            border_lines = [[188, 8, 188, 118, 0], [206, 8, 206, 118, 0]]
             clean_pointer = [[1, self.previous_pointer_row * 7 + 7, 254, 8, 0], [1, self.pointer_row * 7 + 7, 254, 8, 0]]
             pointer = [[0, 7, 256, 8, 1]]
             contents.append({"s": self.new_name, "c": " ", "x": 3, "y": 8})
@@ -198,22 +231,24 @@ class Explorer(object):
             "frame": frame,
             "clean_pointer": clean_pointer,
             "pointer": pointer,
-            "borders": [[0, 0, 256, 8, 1], [0, 0, 256, 127, 1], [0, 119, 256, 8, 1]],
+            "borders": borders,
             "border_lines": border_lines,
             "contents": contents,
-            "status": [
-                {"s": "%s/%s/%s         " % (self.current_page + 1, self.total_pages, self.total), "c": " ", "x": 3, "y": 120},
-                {"s": "% 20s" % self.warning, "c": " ", "x": 135, "y": 120}
-            ]
+            "status": status,
         }
         if self.shell.enable_cursor:
             data["cursor"] = self.get_cursor_position(1)
         return data
 
     def get_cursor_position(self, c = None):
-        return self.cursor_x, self.cursor_y, self.cursor_color if c is None else c
+        if self.mode == "edit":
+            return self.editor.get_cursor_position(c)
+        else:
+            return self.cursor_x, self.cursor_y, self.cursor_color if c is None else c
 
     def set_cursor_color(self, c):
+        if self.mode == "edit":
+            self.editor.set_cursor_color(c)
         self.cursor_color = c
 
     def edit_new_name(self, c):
@@ -280,6 +315,9 @@ class Explorer(object):
                         self.path = path_join(self.path, f[0])
                         self.load()
                         self.pwd = self.path
+                    elif f[1] == "F":
+                        file_path = path_join(self.path, f[0])
+                        self.edit(file_path)
             elif c == "\b" or c == "BB":
                 parent, current = path_split(self.path)
                 if parent == "":
@@ -395,6 +433,13 @@ class Explorer(object):
                     self.warning = "invalid name"
             else:
                 self.edit_new_name(c)
+        elif self.mode == "edit":
+            self.editor.input_char(c)
+            if self.editor.exit:
+                self.mode = ""
+                self.shell.enable_cursor = False
+                self.editor.close()
+                self.editor = None
 
 
 def main(*args, **kwargs):
@@ -430,9 +475,23 @@ def main(*args, **kwargs):
                     explorer.quit = 0
                 explorer.input_char(c)
                 msg.release()
-                yield Condition.get().load(sleep = 0, wait_msg = True, send_msgs = [
-                    Message.get().load(explorer.get_frame(), receiver = display_id)
-                ])
+                if explorer.mode == "edit":
+                    if explorer.editor.status != "loading":
+                        yield Condition.get().load(sleep = 0, wait_msg = True, send_msgs = [
+                            Message.get().load(explorer.get_frame(), receiver = display_id)
+                        ])
+                    else:
+                        for p in explorer.editor.load_and_calc_total_lines():
+                            yield Condition.get().load(sleep = 0, wait_msg = False, send_msgs = [
+                                Message.get().load(explorer.get_editor_loading_frame(p), receiver = display_id)
+                            ])
+                        yield Condition.get().load(sleep = 0, wait_msg = True, send_msgs = [
+                            Message.get().load(explorer.get_frame(), receiver = display_id)
+                        ])
+                else:
+                    yield Condition.get().load(sleep = 0, wait_msg = True, send_msgs = [
+                        Message.get().load(explorer.get_frame(), receiver = display_id)
+                    ])
                 msg = task.get_message()
                 c = msg.content["msg"]
             msg.release()
