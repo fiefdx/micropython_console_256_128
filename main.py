@@ -233,7 +233,7 @@ def display(task, name, scheduler = None, display_cs = None, sd_cs = None, spi =
                     lcd.fill(0)
                 if "frame" in msg.content:
                     #ttt = ticks_ms()
-                    #lcd.fill(0)
+                    #lcd.fill(0)                    
                     frame = msg.content["frame"]
                     lines = [False for i in range(len(frame))]
                     if frame_previous:
@@ -253,24 +253,50 @@ def display(task, name, scheduler = None, display_cs = None, sd_cs = None, spi =
                     else:
                         lines = frame
                     x = 3
-                    if False and lines.count(False) < 9:
-                        wri.clear_frame(18, 42, 0)
-                        wri.printframe(frame, 0)
-                        refresh = True
-                    else:
-                        for n, l in enumerate(lines):
-                            if l:
-                                if l == clear_line:
-                                    Writer.set_textpos(lcd, n * 7 + 1, x)
-                                    wri.clear_line(42, 0)
-                                else:
-                                    Writer.set_textpos(lcd, n * 7 + 1, x)
-                                    wri.clear_line(42, 0)
-                                    Writer.set_textpos(lcd, n * 7 + 1, x)
-                                    wri.printstring(l, 0)
-                        refresh = True
+                    # if False and lines.count(False) < 9:
+                    #     wri.clear_frame(18, 42, 0)
+                    #     wri.printframe(frame, 0)
+                    #     refresh = True
+                    # else:
+                    for n, l in enumerate(lines):
+                        if l:
+                            if l == clear_line:
+                                Writer.set_textpos(lcd, n * 7 + 1, x)
+                                wri.clear_line(42, 0)
+                            else:
+                                Writer.set_textpos(lcd, n * 7 + 1, x)
+                                wri.clear_line(42, 0)
+                                Writer.set_textpos(lcd, n * 7 + 1, x)
+                                wri.printstring(l, 0)
+                    refresh = True
                     frame_previous = frame
                     #print(">>>", ticks_ms() - ttt), ticks_ms() - tttt)
+                if "masks" in msg.content and "frame" in msg.content:
+                    lines = msg.content["frame"]
+                    x = 3
+                    for mask in msg.content["masks"]:
+                        n, start, end = mask
+                        l = lines[n]
+                        if start == 0 and end >= 41:
+                            Writer.set_textpos(lcd, n * 7 + 1, x)
+                            wri.printstring(l, 1)
+                        elif start == 0 and end < 41:
+                            Writer.set_textpos(lcd, n * 7 + 1, x)
+                            wri.printstring(l[start: end], 0)
+                            Writer.set_textpos(lcd, n * 7 + 1, x + end * 6)
+                            wri.printstring(l[end:], 1)
+                        elif start > 0 and end >= 41:
+                            Writer.set_textpos(lcd, n * 7 + 1, x)
+                            wri.printstring(l[:start], 0)
+                            Writer.set_textpos(lcd, n * 7 + 1, x + start * 6)
+                            wri.printstring(l[start:], 1)
+                        elif start > 0 and end < 41:
+                            Writer.set_textpos(lcd, n * 7 + 1, x)
+                            wri.printstring(l[:start], 0)
+                            Writer.set_textpos(lcd, n * 7 + 1, x + start * 6)
+                            wri.printstring(l[start:end], 1)
+                            Writer.set_textpos(lcd, n * 7 + 1, x + end * 6)
+                            wri.printstring(l[end:], 0)
                 if "cursor" in msg.content:
                     refresh = True
                     x, y, c = msg.content["cursor"]
