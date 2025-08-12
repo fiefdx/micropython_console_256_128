@@ -1,5 +1,6 @@
+import os
 import sys
-import uos
+from io import StringIO
 
 from scheduler import Condition, Message
 from common import exists, path_join, get_size
@@ -14,24 +15,23 @@ def main(*args, **kwargs):
     shell_id = kwargs["shell_id"]
     files_total = 0
     dirs_total = 0
-    path = uos.getcwd()
+    path = os.getcwd()
     if len(kwargs["args"]) > 0:
         path = kwargs["args"][0]
     if len(path) > 1 and path.endswith("/"):
         path = path[:-1]
     try:
         if exists(path):
-            fs = uos.listdir(path)
+            fs = os.ilistdir(path)
             max_length = 0
             for f in fs:
-                p = path_join(path, f)
-                s = uos.stat(p)
-                size = get_size(s[6])
-                if len(f) + len(size) + 3 > max_length:
-                    max_length = len(f) + len(size) + 3
-                if s[0] == 16384:
+                p = path_join(path, f[0])
+                size = get_size(f[3])
+                if len(f[0]) + len(size) + 3 > max_length:
+                    max_length = len(f[0]) + len(size) + 3
+                if f[1] == 16384:
                     dirs_total += 1
-                elif s[0] == 32768:
+                elif f[1] == 32768:
                     files_total += 1
             result = ""
             format_string = "%s|%s|%s"
@@ -48,11 +48,11 @@ def main(*args, **kwargs):
             page_size = 18
             exit = False
             n = 2
+            fs = os.ilistdir(path)
             for f in fs:
-                p = path_join(path, f)
-                s = uos.stat(p)
-                if s[0] == 16384:
-                    line = format_string % (f + " " * (max_length - 11 - len(f)), "D", "   0.00B")
+                p = path_join(path, f[0])
+                if f[1] == 16384:
+                    line = format_string % (f[0] + " " * (max_length - 11 - len(f[0])), "D", "   0.00B")
                     n += 1
                     if n == page_size:
                         n = 0
@@ -75,12 +75,12 @@ def main(*args, **kwargs):
                             Message.get().load({"output_part": line}, receiver = shell_id)
                         ])
             if not exit:
+                fs = os.ilistdir(path)
                 for f in fs:
-                    p = path_join(path, f)
-                    s = uos.stat(p)
-                    size = get_size(s[6])
-                    if s[0] == 32768:
-                        line = format_string % (f + " " * (max_length - 11 - len(f)), "F", size)
+                    p = path_join(path, f[0])
+                    size = get_size(f[3])
+                    if f[1] == 32768:
+                        line = format_string % (f[0] + " " * (max_length - 11 - len(f[0])), "F", size)
                         n += 1
                         if n == page_size:
                             n = 0
@@ -120,6 +120,8 @@ def main(*args, **kwargs):
                 Message.get().load({"output": result}, receiver = shell_id)
             ])
     except Exception as e:
+        buf = StringIO()
+        sys.print_exception(e, buf)
         yield Condition.get().load(sleep = 0, send_msgs = [
-            Message.get().load({"output": sys.print_exception(e)}, receiver = shell_id)
+            Message.get().load({"output": buf.getvalue()}, receiver = shell_id)
         ])
