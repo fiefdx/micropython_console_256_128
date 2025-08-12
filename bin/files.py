@@ -140,7 +140,7 @@ class Explorer(object):
             "frame": frame,
             "cursor": self.editor.get_cursor_position(1),
             "clean_pointer": [[1, self.previous_pointer_row * 7 + 7, 254, 8, 0], [1, self.pointer_row * 7 + 7, 254, 8, 0]],
-            "border_lines": [[188, 8, 188, 118, 0], [206, 8, 206, 118, 0]],
+            "border_lines": [[188, 8, 188, 118, 0], [206, 8, 206, 118, 0], [2, 1, 2, 125, 0]],
             "borders": [[0, 0, 256, 8, 1], [0, 0, 256, 127, 1], [0, 119, 256, 8, 1]],
         }
         return data
@@ -169,12 +169,12 @@ class Explorer(object):
                 else:
                     name += " " * (31 - len(name))
                 frame.append("%31s %s %s" % (name, f[1], f[2]))
-            border_lines = [[188, 8, 188, 118, 1], [206, 8, 206, 118, 1]]
+            border_lines = [[188, 8, 188, 118, 1], [206, 8, 206, 118, 1], [2, 1, 2, 125, 0]]
             clean_pointer = [[1, self.previous_pointer_row * 7 + 7, 254, 8, 0], [0, 7, 256, 8, 0]]
             pointer = [[1, self.pointer_row * 7 + 7, 254, 8, 1]]
         elif self.mode == "edit":
             frame = self.editor.get_display_frame()
-            border_lines = [[188, 8, 188, 118, 0], [206, 8, 206, 118, 0]]
+            border_lines = [[188, 8, 188, 118, 0], [206, 8, 206, 118, 0], [2, 1, 2, 125, 0]]
             clean_pointer = [[1, self.previous_pointer_row * 7 + 7, 254, 8, 0], [1, self.pointer_row * 7 + 7, 254, 8, 0]]
             borders[0] = [0, 0, 256, 8, 0]
             pointer = []
@@ -184,7 +184,7 @@ class Explorer(object):
                 frame.append("")
             frame[0] = " " * 17 + "New File"
             frame[1] = self.new_name
-            border_lines = [[188, 8, 188, 118, 0], [206, 8, 206, 118, 0]]
+            border_lines = [[188, 8, 188, 118, 0], [206, 8, 206, 118, 0], [2, 1, 2, 125, 0]]
             clean_pointer = [[1, self.previous_pointer_row * 7 + 7, 254, 8, 0], [1, self.pointer_row * 7 + 7, 254, 8, 0]]
             pointer = [[0, 7, 256, 8, 1]]
         elif self.mode == "cd":
@@ -192,7 +192,7 @@ class Explorer(object):
                 frame.append("")
             frame[0] = " " * 16 + "New Folder"
             frame[1] = self.new_name
-            border_lines = [[188, 8, 188, 118, 0], [206, 8, 206, 118, 0]]
+            border_lines = [[188, 8, 188, 118, 0], [206, 8, 206, 118, 0], [2, 1, 2, 125, 0]]
             clean_pointer = [[1, self.previous_pointer_row * 7 + 7, 254, 8, 0], [1, self.pointer_row * 7 + 7, 254, 8, 0]]
             pointer = [[0, 7, 256, 8, 1]]
         elif self.mode == "rm":
@@ -203,7 +203,7 @@ class Explorer(object):
                 frame[0] = " " * 15 + "Delete File"
             else:
                 frame[0] = " " * 14 + "Delete Folder"
-            border_lines = [[188, 8, 188, 118, 0], [206, 8, 206, 118, 0]]
+            border_lines = [[188, 8, 188, 118, 0], [206, 8, 206, 118, 0], [2, 1, 2, 125, 0]]
             clean_pointer = [[1, self.previous_pointer_row * 7 + 7, 254, 8, 0], [1, self.pointer_row * 7 + 7, 254, 8, 0]]
             pointer = [[0, 7, 256, 8, 1]]
             contents.append({"s": "Are you sure you want to delete it? [y/n]", "c": " ", "x": 3, "y": 15})
@@ -213,7 +213,7 @@ class Explorer(object):
                 frame.append("")
             frame[0] = " " * 18 + "Paste"
             frame[1] = self.new_name
-            border_lines = [[188, 8, 188, 118, 0], [206, 8, 206, 118, 0]]
+            border_lines = [[188, 8, 188, 118, 0], [206, 8, 206, 118, 0], [2, 1, 2, 125, 0]]
             clean_pointer = [[1, self.previous_pointer_row * 7 + 7, 254, 8, 0], [1, self.pointer_row * 7 + 7, 254, 8, 0]]
             pointer = [[0, 7, 256, 8, 1]]
             contents.append({"s": self.new_name, "c": " ", "x": 3, "y": 8})
@@ -222,12 +222,12 @@ class Explorer(object):
                 frame.append("")
             frame[0] = " " * 17 + "Rename"
             frame[1] = self.new_name
-            border_lines = [[188, 8, 188, 118, 0], [206, 8, 206, 118, 0]]
+            border_lines = [[188, 8, 188, 118, 0], [206, 8, 206, 118, 0], [2, 1, 2, 125, 0]]
             clean_pointer = [[1, self.previous_pointer_row * 7 + 7, 254, 8, 0], [1, self.pointer_row * 7 + 7, 254, 8, 0]]
             pointer = [[0, 7, 256, 8, 1]]
             contents.append({"s": self.new_name, "c": " ", "x": 3, "y": 8})
         data = {
-            "render": (("clean_pointer", "rects"), ("borders", "rects"), ("border_lines", "lines"), ("status", "texts"), ("pointer", "rects"), ("contents", "texts")),
+            "render": (("clean_pointer", "rects"), ("border_lines", "lines"), ("borders", "rects"), ("status", "texts"), ("pointer", "rects"), ("contents", "texts")),
             "frame": frame,
             "clean_pointer": clean_pointer,
             "pointer": pointer,
@@ -467,7 +467,7 @@ def main(*args, **kwargs):
             msg = task.get_message()
             c = msg.content["msg"]
             while explorer.quit < 3:
-                if c == "ES":
+                if c == "ES" and explorer.mode != "edit":
                     explorer.quit += 1
                     if explorer.quit == 3:
                         break
