@@ -137,7 +137,7 @@ def render_lines(name, msg, lcd):
 def render_rects(name, msg, lcd):
     for rect in msg.content[name]:
         x, y, w, h, color = rect
-        lcd.rect(x, y, w, h, 1)
+        lcd.rect(x, y, w, h, color)
 
 
 def render(category, msg, wri, tile_wri, lcd, refresh):
