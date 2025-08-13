@@ -41,6 +41,7 @@ class EditShell(object):
         self.file = open(self.file_path, "r")
         self.status = "loading"
         self.mode = "edit"
+        self.previous_mode = "edit"
         self.select_start_row = 0
         self.select_start_col = 0
         self.exit_count = 0
@@ -127,7 +128,7 @@ class EditShell(object):
             elif c == "Ctrl-B":
                 self.mode = "select"
                 self.select_start_row = self.cursor_row
-                self.select_start_col = self.cursor_col
+                self.select_start_col = self.cursor_col + self.offset_col
             elif c == "Ctrl-V":
                 pass
             elif c == "ES":
@@ -161,12 +162,15 @@ class EditShell(object):
             elif c == "BA":
                 self.page_right()
             elif c == "Ctrl-C":
+                self.previous_mode = self.mode
                 self.mode = "edit"
                 ClipBoard.set("")
             elif c == "Ctrl-X":
+                self.previous_mode = self.mode
                 self.mode = "edit"
                 ClipBoard.set("")
             elif c == "ES":
+                self.previous_mode = self.mode
                 self.mode = "edit"
 
     def append_edit_operation(self):
@@ -211,9 +215,30 @@ class EditShell(object):
         
     def exists_line(self, line_num):
         return line_num >= 0 and line_num < self.total_lines
-            
-    def get_display_frame(self):
-        return self.cache_to_frame()
+
+    def get_frame(self):
+        data = {
+            "frame": self.cache_to_frame(),
+            "cursor": self.get_cursor_position(1),
+        }
+        if self.mode == "select":
+            data["render"] = (("clear_lines", "lines"), ("selects", "lines"))
+            clears = []
+            for i in range(17):
+                clears.append([1, i * 7 + 7, 254, i * 7 + 7, 0])
+            selects = []
+            for l in self.get_select_lines():
+                selects.append([l[0][0], l[0][1], l[1][0] - 1, l[1][1], 1])
+            data["clear_lines"] = clears
+            data["selects"] = selects
+        elif self.previous_mode == "select":
+            self.previous_mode = self.mode
+            data["render"] = (("clear_lines", "lines"), )
+            clears = []
+            for i in range(17):
+                clears.append([1, i * 7 + 7, 254, i * 7 + 7, 0])
+            data["clear_lines"] = clears
+        return data
 
     def get_loading_frame(self, p):
         msg = "loading: %s%%" % p
@@ -242,6 +267,65 @@ class EditShell(object):
     
     def set_cursor_color(self, c):
         self.cursor_color = c
+
+    def cr2xy(self, col, row):
+        return (col * 6 + 3, row * 7 + 7)
+
+    def get_select_lines(self):
+        lines = []
+        display_start = self.display_offset_row
+        display_end = self.display_offset_row + self.cache_size
+        select_start_col = self.select_start_col
+        select_start_row = self.select_start_row
+        select_end_col = self.cursor_col + self.offset_col
+        select_end_row = self.cursor_row
+        if select_start_row > select_end_row or (select_start_row == select_end_row and select_start_col > select_end_col):
+            select_end_col = self.select_start_col
+            select_end_row = self.select_start_row
+            select_start_col = self.cursor_col + self.offset_col
+            select_start_row = self.cursor_row
+        if select_start_row >= display_start and select_end_row < display_end:
+            if select_start_row == select_end_row:
+                if select_start_col != select_end_col:
+                    line = []
+                    if select_start_col >= self.offset_col:
+                        line.append(self.cr2xy(select_start_col - self.offset_col, select_start_row - display_start))
+                    else:
+                        line.append(self.cr2xy(0, select_start_row - display_start))
+                    line.append(self.cr2xy(select_end_col - self.offset_col, select_start_row - display_start))
+                    lines.append(line)
+            else:
+                line = []
+                if select_start_col >= self.offset_col:
+                    line.append(self.cr2xy(select_start_col - self.offset_col, select_start_row - display_start))
+                else:
+                    line.append(self.cr2xy(0, select_start_row - display_start))
+                line.append(self.cr2xy(self.display_width, select_start_row - display_start))
+                lines.append(line)
+                for row in range(select_start_row + 1, select_end_row):
+                    lines.append([self.cr2xy(0, row - display_start), self.cr2xy(self.display_width, row - display_start)])
+                if select_end_col - self.offset_col > 0:
+                    line = [self.cr2xy(0, select_end_row - display_start)]
+                    line.append(self.cr2xy(select_end_col - self.offset_col, select_end_row - display_start))
+                    lines.append(line)
+        elif select_start_row >= display_start and select_end_row >= display_end:
+            line = []
+            if select_start_col >= self.offset_col:
+                line.append(self.cr2xy(select_start_col - self.offset_col, select_start_row - display_start))
+            else:
+                line.append(self.cr2xy(0, select_start_row - display_start))
+            line.append(self.cr2xy(self.display_width, select_start_row - display_start))
+            lines.append(line)
+            for row in range(select_start_row + 1, display_end):
+                lines.append([self.cr2xy(0, row - display_start), self.cr2xy(self.display_width, row - display_start)])
+        elif select_start_row < display_start and select_end_row >= display_start:
+            for row in range(display_start, select_end_row):
+                lines.append([self.cr2xy(0, row - display_start), self.cr2xy(self.display_width, row - display_start)])
+            if select_end_col - self.offset_col > 0:
+                line = [self.cr2xy(0, select_end_row - display_start)]
+                line.append(self.cr2xy(select_end_col - self.offset_col, select_end_row - display_start))
+                lines.append(line)
+        return lines
             
     def cursor_move_up(self):
         self.cursor_row -= 1
@@ -415,7 +499,7 @@ def main(*args, **kwargs):
                     Message.get().load({"frame": s.get_loading_frame(p), "cursor": s.get_cursor_position(1)}, receiver = display_id)
                 ])
             yield Condition.get().load(sleep = 0, wait_msg = True, send_msgs = [
-                Message.get().load({"frame": s.get_display_frame(), "cursor": s.get_cursor_position(1)}, receiver = display_id)
+                Message.get().load(s.get_frame(), receiver = display_id)
             ])
             msg = task.get_message()
             c = msg.content["msg"]
@@ -426,7 +510,7 @@ def main(*args, **kwargs):
                     s.close()
                     break
                 yield Condition.get().load(sleep = 0, wait_msg = True, send_msgs = [
-                    Message.get().load({"frame": s.get_display_frame(), "cursor": s.get_cursor_position(1)}, receiver = display_id)
+                    Message.get().load(s.get_frame(), receiver = display_id)
                 ])
                 msg = task.get_message()
                 c = msg.content["msg"]
