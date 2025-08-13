@@ -377,7 +377,7 @@ class BasicShell(object):
             pass
         elif c == "Ctrl-C":
             self.kill_program()
-        else:
+        elif len(c) == 1:
             if self.wait_for_input and self.input_start is None:
                 self.input_start = len(self.cache[-1])
             self.cache[-1] = self.cache[-1][:self.current_col] + c + self.cache[-1][self.current_col:]

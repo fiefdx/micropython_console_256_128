@@ -124,7 +124,7 @@ class EditShell(object):
                 self.exit_count += 1
                 if self.exit_count >= 3:
                     self.exit = True
-        else:
+        elif len(c) == 1:
             self.status = "changed"
             self.exit_count = 0
             self.append_edit_operation()

@@ -196,7 +196,7 @@ class Shell(object):
     def write_char(self, c):
         if c == "\n":
             self.cache.append(self.prompt_c)
-        else:
+        elif len(c) == 1:
             self.cache[-1] += c
             if len(self.cache[-1]) > self.display_width_with_prompt:
                 self.cache.append(" " + self.cache[-1][self.display_width_with_prompt:])
@@ -246,7 +246,7 @@ class Shell(object):
                     self.cursor_move_right()
                 elif c in ("ES", "SAVE"):
                     pass
-                else:
+                elif len(c) == 1:
                     self.cache[-1] = self.cache[-1][:self.current_col] + c + self.cache[-1][self.current_col:]
                     self.cursor_move_right()
                     

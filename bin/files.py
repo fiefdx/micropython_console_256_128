@@ -136,7 +136,7 @@ class Explorer(object):
         frame = self.editor.get_loading_frame(p)
         frame[0] = " " * 14 + "Editor Opening"
         data = {
-            "render": (("clean_pointer", "rects"), ("borders", "rects"), ("border_lines", "lines")),
+            "render": (("clean_pointer", "rects"), ("border_lines", "lines"), ("borders", "rects")),
             "frame": frame,
             "cursor": self.editor.get_cursor_position(1),
             "clean_pointer": [[1, self.previous_pointer_row * 7 + 7, 254, 8, 0], [1, self.pointer_row * 7 + 7, 254, 8, 0]],
