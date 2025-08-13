@@ -165,7 +165,7 @@ def rmtree(target):
             yield target
     
 
-class ClipBoard(Object):
+class ClipBoard(object):
     C = ""
 
     @classmethod

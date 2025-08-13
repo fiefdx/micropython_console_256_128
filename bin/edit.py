@@ -9,7 +9,7 @@ from io import StringIO
 from listfile import ListFile
 from shell import Shell
 from scheduler import Condition, Message
-from common import exists, path_join, isfile, isdir
+from common import exists, path_join, isfile, isdir, ClipBoard
 
 coroutine = True
 
@@ -40,99 +40,153 @@ class EditShell(object):
             f.close()
         self.file = open(self.file_path, "r")
         self.status = "loading"
+        self.mode = "edit"
+        self.select_start_row = 0
+        self.select_start_col = 0
         self.exit_count = 0
         
     def input_char(self, c):
-        if len(self.cache) == 0:
-            self.cache.append("")
-        if c == "\n":
-            self.status = "changed"
-            self.exit_count = 0
-            before_enter = self.cache[self.cursor_row][:self.cursor_col + self.offset_col]
-            after_enter = self.cache[self.cursor_row][self.cursor_col + self.offset_col:]
-            self.cache[self.cursor_row] = before_enter
-            self.edit_last_line = self.cursor_row
-            self.cursor_row += 1
-            op = None
-            if len(self.cache) > self.cursor_row:
-                self.cache.insert(self.cursor_row, after_enter)
-                op = ["insert", self.cursor_row - 1, before_enter, after_enter]
-            else:
-                self.cache.append(after_enter)
-                op = ["append", self.cursor_row - 1, before_enter, after_enter]
-            self.edit_redo_cache.clear()
-            if self.cursor_row > self.display_offset_row + self.cache_size - 1:
-                self.display_offset_row += 1
-            self.cursor_col = 0
-            self.offset_col = 0
-            op.append((self.cursor_col, self.cursor_row, self.display_offset_col, self.display_offset_row, self.offset_col))
-            self.edit_history.append(op)
-        elif c == "\b":
-            self.status = "changed"
-            self.exit_count = 0
-            op = None
-            if len(self.cache[self.cursor_row]) == 0:
+        if self.mode == "edit":
+            if len(self.cache) == 0:
+                self.cache.append("")
+            if c == "\n":
+                self.status = "changed"
+                self.exit_count = 0
+                before_enter = self.cache[self.cursor_row][:self.cursor_col + self.offset_col]
+                after_enter = self.cache[self.cursor_row][self.cursor_col + self.offset_col:]
+                self.cache[self.cursor_row] = before_enter
                 self.edit_last_line = self.cursor_row
-                self.edit_redo_cache.clear()
-                self.cache.pop(self.cursor_row)
-                self.cursor_move_left()
-                self.edit_history.append(["delete", self.cursor_row, "", (self.cursor_col, self.cursor_row, self.display_offset_col, self.display_offset_row, self.offset_col)])
-            else:
-                delete_before = self.cache[self.cursor_row][:self.cursor_col + self.offset_col]
-                if len(delete_before) > 0:
-                    self.append_edit_operation()
-                    self.cache[self.cursor_row] = self.cache[self.cursor_row][:self.cursor_col + self.offset_col - 1] + self.cache[self.cursor_row][self.cursor_col + self.offset_col:]
-                    self.cursor_move_left()
+                self.cursor_row += 1
+                op = None
+                if len(self.cache) > self.cursor_row:
+                    self.cache.insert(self.cursor_row, after_enter)
+                    op = ["insert", self.cursor_row - 1, before_enter, after_enter]
                 else:
-                    self.append_edit_operation()
-                    if self.cursor_row > 0:
-                        self.edit_last_line = self.cursor_row
-                        current_line = self.cache.pop(self.cursor_row)
-                        op = ["merge", self.cursor_row, current_line, "", (self.cursor_col, self.cursor_row, self.display_offset_col, self.display_offset_row, self.offset_col)]
-                        self.edit_redo_cache.clear()
+                    self.cache.append(after_enter)
+                    op = ["append", self.cursor_row - 1, before_enter, after_enter]
+                self.edit_redo_cache.clear()
+                if self.cursor_row > self.display_offset_row + self.cache_size - 1:
+                    self.display_offset_row += 1
+                self.cursor_col = 0
+                self.offset_col = 0
+                op.append((self.cursor_col, self.cursor_row, self.display_offset_col, self.display_offset_row, self.offset_col))
+                self.edit_history.append(op)
+            elif c == "\b":
+                self.status = "changed"
+                self.exit_count = 0
+                op = None
+                if len(self.cache[self.cursor_row]) == 0:
+                    self.edit_last_line = self.cursor_row
+                    self.edit_redo_cache.clear()
+                    self.cache.pop(self.cursor_row)
+                    self.cursor_move_left()
+                    self.edit_history.append(["delete", self.cursor_row, "", (self.cursor_col, self.cursor_row, self.display_offset_col, self.display_offset_row, self.offset_col)])
+                else:
+                    delete_before = self.cache[self.cursor_row][:self.cursor_col + self.offset_col]
+                    if len(delete_before) > 0:
+                        self.append_edit_operation()
+                        self.cache[self.cursor_row] = self.cache[self.cursor_row][:self.cursor_col + self.offset_col - 1] + self.cache[self.cursor_row][self.cursor_col + self.offset_col:]
                         self.cursor_move_left()
-                        op[3] = self.cache[self.cursor_row]
-                        self.cache[self.cursor_row] += current_line
-                        self.edit_history.append(op)
-        elif c == "UP":
-            self.cursor_move_up()
-        elif c == "DN":
-            self.cursor_move_down()
-        elif c in ("BX"):
-            self.page_up()
-        elif c in ("BB"):
-            self.page_down()
-        elif c == "LT":
-            self.cursor_move_left()
-        elif c == "RT":
-            self.cursor_move_right()
-        elif c == "BY":
-            self.page_left()
-        elif c == "BA":
-            self.page_right()
-        elif c == "SAVE":
-            fp = open(self.file_path, "w")
-            for line in self.cache:
-                fp.write(line + "\n")
-            fp.close()
-            self.status = "saved"
-        elif c == "Ctrl-A":
-            self.redo()
-        elif c == "Ctrl-Z":
-            self.undo()
-        elif c == "ES":
-            if self.status == "saved":
-                self.exit = True
-            else:
-                self.exit_count += 1
-                if self.exit_count >= 3:
+                    else:
+                        self.append_edit_operation()
+                        if self.cursor_row > 0:
+                            self.edit_last_line = self.cursor_row
+                            current_line = self.cache.pop(self.cursor_row)
+                            op = ["merge", self.cursor_row, current_line, "", (self.cursor_col, self.cursor_row, self.display_offset_col, self.display_offset_row, self.offset_col)]
+                            self.edit_redo_cache.clear()
+                            self.cursor_move_left()
+                            op[3] = self.cache[self.cursor_row]
+                            self.cache[self.cursor_row] += current_line
+                            self.edit_history.append(op)
+            elif c == "UP":
+                self.cursor_move_up()
+            elif c == "DN":
+                self.cursor_move_down()
+            elif c in ("BX"):
+                self.page_up()
+            elif c in ("BB"):
+                self.page_down()
+            elif c == "LT":
+                self.cursor_move_left()
+            elif c == "RT":
+                self.cursor_move_right()
+            elif c == "BY":
+                self.page_left()
+            elif c == "BA":
+                self.page_right()
+            elif c == "SAVE":
+                fp = open(self.file_path, "w")
+                for line in self.cache:
+                    fp.write(line + "\n")
+                fp.close()
+                self.status = "saved"
+            elif c == "Ctrl-A":
+                self.redo()
+            elif c == "Ctrl-Z":
+                self.undo()
+            elif c == "Ctrl-B":
+                self.mode = "select"
+                self.select_start_row = self.cursor_row
+                self.select_start_col = self.cursor_col
+            elif c == "ES":
+                if self.status == "saved":
                     self.exit = True
-        elif len(c) == 1:
-            self.status = "changed"
-            self.exit_count = 0
-            self.append_edit_operation()
-            self.cache[self.cursor_row] = self.cache[self.cursor_row][:self.cursor_col + self.offset_col] + c + self.cache[self.cursor_row][self.cursor_col + self.offset_col:]
-            self.cursor_move_right()        
+                else:
+                    self.exit_count += 1
+                    if self.exit_count >= 3:
+                        self.exit = True
+            elif len(c) == 1:
+                self.status = "changed"
+                self.exit_count = 0
+                self.append_edit_operation()
+                self.cache[self.cursor_row] = self.cache[self.cursor_row][:self.cursor_col + self.offset_col] + c + self.cache[self.cursor_row][self.cursor_col + self.offset_col:]
+                self.cursor_move_right()
+        elif self.mode == "select":
+            if c == "UP":
+                self.cursor_move_up()
+            elif c == "DN":
+                self.cursor_move_down()
+            elif c in ("BX"):
+                self.page_up()
+            elif c in ("BB"):
+                self.page_down()
+            elif c == "LT":
+                self.cursor_move_left()
+            elif c == "RT":
+                self.cursor_move_right()
+            elif c == "BY":
+                self.page_left()
+            elif c == "BA":
+                self.page_right()
+            elif c == "Ctrl-C":
+                self.mode = "copy"
+                ClipBoard.set("")
+            elif c == "Ctrl-X":
+                self.mode = "cut"
+                ClipBoard.set("")
+            elif c == "ES":
+                self.mode = "edit"
+        elif self.mode == "copy" or self.mode == "cut":
+            if c == "UP":
+                self.cursor_move_up()
+            elif c == "DN":
+                self.cursor_move_down()
+            elif c in ("BX"):
+                self.page_up()
+            elif c in ("BB"):
+                self.page_down()
+            elif c == "LT":
+                self.cursor_move_left()
+            elif c == "RT":
+                self.cursor_move_right()
+            elif c == "BY":
+                self.page_left()
+            elif c == "BA":
+                self.page_right()
+            elif c == "Ctrl-V":
+                self.mode = "edit"
+            elif c == "ES":
+                self.mode = "edit"
 
     def append_edit_operation(self):
         if self.cursor_row != self.edit_last_line:
@@ -195,7 +249,11 @@ class EditShell(object):
             frame.append(line[self.offset_col: self.offset_col + self.display_width])
         for i in range(self.cache_size - len(frame)):
             frame.append("")
-        frame.append("{progress: <35}{status: >7}".format(progress = "%s/%s/%s" % (self.cursor_col + self.offset_col, self.cursor_row + 1, len(self.cache)), status = self.status))
+        frame.append("{progress: <27}{mode: >8}{status: >7}".format(
+            progress = "%s/%s/%s" % (self.cursor_col + self.offset_col, self.cursor_row + 1, len(self.cache)),
+            mode = "% 7s " % self.mode,
+            status = self.status)
+        )
         return frame
     
     def get_cursor_position(self, c = None):
