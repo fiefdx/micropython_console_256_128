@@ -174,7 +174,8 @@ class Explorer(object):
             pointer = [[1, self.pointer_row * 7 + 7, 254, 8, 1]]
         elif self.mode == "edit":
             frame = self.editor.cache_to_frame()
-            border_lines = [[188, 8, 188, 118, 0], [206, 8, 206, 118, 0], [2, 1, 2, 125, 0]]
+            # border_lines = [[188, 8, 188, 118, 0], [206, 8, 206, 118, 0], [2, 1, 2, 125, 0]]
+            border_lines = []
             clean_pointer = [[1, self.previous_pointer_row * 7 + 7, 254, 8, 0], [1, self.pointer_row * 7 + 7, 254, 8, 0]]
             borders[0] = [0, 0, 256, 8, 0]
             pointer = []
