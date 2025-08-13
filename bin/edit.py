@@ -98,9 +98,9 @@ class EditShell(object):
                             op[3] = self.cache[self.cursor_row]
                             self.cache[self.cursor_row] += current_line
                             self.edit_history.append(op)
-            elif c == "UP":
+            elif c == "UP" or c == "SUP":
                 self.cursor_move_up()
-            elif c == "DN":
+            elif c == "DN" or c == "SDN":
                 self.cursor_move_down()
             elif c in ("BX"):
                 self.page_up()
@@ -128,6 +128,8 @@ class EditShell(object):
                 self.mode = "select"
                 self.select_start_row = self.cursor_row
                 self.select_start_col = self.cursor_col
+            elif c == "Ctrl-V":
+                pass
             elif c == "ES":
                 if self.status == "saved":
                     self.exit = True
@@ -142,9 +144,9 @@ class EditShell(object):
                 self.cache[self.cursor_row] = self.cache[self.cursor_row][:self.cursor_col + self.offset_col] + c + self.cache[self.cursor_row][self.cursor_col + self.offset_col:]
                 self.cursor_move_right()
         elif self.mode == "select":
-            if c == "UP":
+            if c == "UP" or c == "SUP":
                 self.cursor_move_up()
-            elif c == "DN":
+            elif c == "DN" or c == "SDN":
                 self.cursor_move_down()
             elif c in ("BX"):
                 self.page_up()
@@ -159,32 +161,11 @@ class EditShell(object):
             elif c == "BA":
                 self.page_right()
             elif c == "Ctrl-C":
-                self.mode = "copy"
+                self.mode = "edit"
                 ClipBoard.set("")
             elif c == "Ctrl-X":
-                self.mode = "cut"
+                self.mode = "edit"
                 ClipBoard.set("")
-            elif c == "ES":
-                self.mode = "edit"
-        elif self.mode == "copy" or self.mode == "cut":
-            if c == "UP":
-                self.cursor_move_up()
-            elif c == "DN":
-                self.cursor_move_down()
-            elif c in ("BX"):
-                self.page_up()
-            elif c in ("BB"):
-                self.page_down()
-            elif c == "LT":
-                self.cursor_move_left()
-            elif c == "RT":
-                self.cursor_move_right()
-            elif c == "BY":
-                self.page_left()
-            elif c == "BA":
-                self.page_right()
-            elif c == "Ctrl-V":
-                self.mode = "edit"
             elif c == "ES":
                 self.mode = "edit"
 
