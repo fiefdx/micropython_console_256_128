@@ -19,11 +19,10 @@ class EditShell(object):
         self.display_width = display_size[0]
         self.display_height = display_size[1]
         self.offset_col = 0
-        self.offset_row = 0
         self.cache_size = cache_size
         self.cache = [] if ram else ListFile("/.edit_cache.json", shrink_threshold = 1024000) # []
         self.edit_history = [] if ram else ListFile("/.edit_history_cache.json", shrink_threshold = 1024000) # []
-        self.edit_redo_cache = [] if ram else ListFile("/.edit_redo_cache.jsonticks_diff", shrink_threshold = 1024000) # []
+        self.edit_redo_cache = [] if ram else ListFile("/.edit_redo_cache.json", shrink_threshold = 1024000) # []
         self.edit_history_max_length = 1000
         self.edit_last_line = None
         self.cursor_color = 1
@@ -54,26 +53,30 @@ class EditShell(object):
             self.cache[self.cursor_row] = before_enter
             self.edit_last_line = self.cursor_row
             self.cursor_row += 1
+            op = None
             if len(self.cache) > self.cursor_row:
                 self.cache.insert(self.cursor_row, after_enter)
-                self.edit_history.append(["insert", self.cursor_row - 1, before_enter, after_enter])
+                op = ["insert", self.cursor_row - 1, before_enter, after_enter]
             else:
                 self.cache.append(after_enter)
-                self.edit_history.append(["append", self.cursor_row - 1, before_enter, after_enter])
+                op = ["append", self.cursor_row - 1, before_enter, after_enter]
             self.edit_redo_cache.clear()
             if self.cursor_row > self.display_offset_row + self.cache_size - 1:
                 self.display_offset_row += 1
             self.cursor_col = 0
             self.offset_col = 0
+            op.append((self.cursor_col, self.cursor_row, self.display_offset_col, self.display_offset_row, self.offset_col))
+            self.edit_history.append(op)
         elif c == "\b":
             self.status = "changed"
             self.exit_count = 0
+            op = None
             if len(self.cache[self.cursor_row]) == 0:
                 self.edit_last_line = self.cursor_row
-                self.edit_history.append(["delete", self.cursor_row, ""])
                 self.edit_redo_cache.clear()
                 self.cache.pop(self.cursor_row)
                 self.cursor_move_left()
+                self.edit_history.append(["delete", self.cursor_row, "", (self.cursor_col, self.cursor_row, self.display_offset_col, self.display_offset_row, self.offset_col)])
             else:
                 delete_before = self.cache[self.cursor_row][:self.cursor_col + self.offset_col]
                 if len(delete_before) > 0:
@@ -85,7 +88,7 @@ class EditShell(object):
                     if self.cursor_row > 0:
                         self.edit_last_line = self.cursor_row
                         current_line = self.cache.pop(self.cursor_row)
-                        op = ["merge", self.cursor_row, current_line, ""]
+                        op = ["merge", self.cursor_row, current_line, "", (self.cursor_col, self.cursor_row, self.display_offset_col, self.display_offset_row, self.offset_col)]
                         self.edit_redo_cache.clear()
                         self.cursor_move_left()
                         op[3] = self.cache[self.cursor_row]
@@ -134,15 +137,15 @@ class EditShell(object):
     def append_edit_operation(self):
         if self.cursor_row != self.edit_last_line:
             if self.edit_last_line is not None:
-                self.edit_history.append(["edit", self.edit_last_line, self.cache[self.edit_last_line]])
+                self.edit_history.append(["edit", self.edit_last_line, self.cache[self.edit_last_line], (self.cursor_col, self.cursor_row, self.display_offset_col, self.display_offset_row, self.offset_col)])
                 if len(self.edit_history) > self.edit_history_max_length:
                     self.edit_history.pop(0)
             self.edit_last_line = self.cursor_row
-            self.edit_history.append(["edit", self.edit_last_line, self.cache[self.edit_last_line]])
+            self.edit_history.append(["edit", self.edit_last_line, self.cache[self.edit_last_line], (self.cursor_col, self.cursor_row, self.display_offset_col, self.display_offset_row, self.offset_col)])
             if len(self.edit_history) > self.edit_history_max_length:
                 self.edit_history.pop(0)
         else:
-            self.edit_history.append(["edit", self.edit_last_line, self.cache[self.edit_last_line]])
+            self.edit_history.append(["edit", self.edit_last_line, self.cache[self.edit_last_line], (self.cursor_col, self.cursor_row, self.display_offset_col, self.display_offset_row, self.offset_col)])
             if len(self.edit_history) > self.edit_history_max_length:
                 self.edit_history.pop(0)
         self.edit_redo_cache.clear()
@@ -297,36 +300,54 @@ class EditShell(object):
                 op = self.edit_history[-1]
                 if op[0] == "edit":
                     if self.cache[op[1]] != op[2]:
-                        self.edit_redo_cache.append(["edit", op[1], self.cache[op[1]]])
+                        self.edit_redo_cache.append(["edit", op[1], self.cache[op[1]], (self.cursor_col, self.cursor_row, self.display_offset_col, self.display_offset_row, self.offset_col)])
             op = self.edit_history.pop(-1)
             if op[0] == "edit":
                 self.cache[op[1]] = op[2]
+                self.cursor_col, self.cursor_row, self.display_offset_col, self.display_offset_row, self.offset_col = op[3]
             elif op[0] == "insert":
                 self.cache[op[1]] = op[2] + op[3]
                 self.cache.pop(op[1] + 1)
+                self.cursor_col, self.cursor_row, self.display_offset_col, self.display_offset_row, self.offset_col = op[4]
+                self.cursor_row -= 1
+                self.cursor_col = len(op[2])
+            elif op[0] == "append":
+                self.cache[op[1]] = op[2] + op[3]
+                self.cache.pop(op[1] + 1)
+                self.cursor_col, self.cursor_row, self.display_offset_col, self.display_offset_row, self.offset_col = op[4]
+                self.cursor_row -= 1
+                self.cursor_col = len(op[2])
             elif op[0] == "delete":
                 self.cache.insert(op[1], op[2])
+                self.cursor_col, self.cursor_row, self.display_offset_col, self.display_offset_row, self.offset_col = op[3]
             elif op[0] == "merge":
                 self.cache.insert(op[1], op[2])
                 self.cache[op[1] - 1] = op[3]
+                self.cursor_col, self.cursor_row, self.display_offset_col, self.display_offset_row, self.offset_col = op[4]
             self.edit_redo_cache.append(op)
-        print(len(self.edit_history), len(self.edit_redo_cache))
 
     def redo(self):
         if len(self.edit_redo_cache) > 0:
             op = self.edit_redo_cache.pop(-1)
             if op[0] == "edit":
                 self.cache[op[1]] = op[2]
+                self.cursor_col, self.cursor_row, self.display_offset_col, self.display_offset_row, self.offset_col = op[3]
             elif op[0] == "insert":
                 self.cache[op[1]] = op[2]
                 self.cache.insert(op[1] + 1, op[3])
+                self.cursor_col, self.cursor_row, self.display_offset_col, self.display_offset_row, self.offset_col = op[4]
+            elif op[0] == "append":
+                self.cache[op[1]] = op[2]
+                self.cache.insert(op[1] + 1, op[3])
+                self.cursor_col, self.cursor_row, self.display_offset_col, self.display_offset_row, self.offset_col = op[4]
             elif op[0] == "delete":
                 self.cache.pop(op[1])
+                self.cursor_col, self.cursor_row, self.display_offset_col, self.display_offset_row, self.offset_col = op[3]
             elif op[0] == "merge":
                 self.cache.pop(op[1])
                 self.cache[op[1] - 1] = op[3] + op[2]
+                self.cursor_col, self.cursor_row, self.display_offset_col, self.display_offset_row, self.offset_col = op[4]
             self.edit_history.append(op)
-        print(len(self.edit_history), len(self.edit_redo_cache))
             
     def close(self):
         self.file.close()
