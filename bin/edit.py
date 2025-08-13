@@ -280,12 +280,17 @@ class EditShell(object):
             if n == 0:
                 self.cache[insert_row] = self.cache[insert_row][:insert_col] + line
                 if line.endswith("\n"):
+                    self.edit_history.append(["edit", insert_row, self.cache[insert_row], (self.cursor_col, self.cursor_row, self.display_offset_col, self.display_offset_row, self.offset_col)])
                     self.cache[insert_row] = self.cache[insert_row][:-1]
+                    self.edit_history.append(["insert_row", insert_row + 1, "", (self.cursor_col, self.cursor_row, self.display_offset_col, self.display_offset_row, self.offset_col)])
                     self.cache.insert(insert_row + 1, "")
             else:
+                self.edit_history.append(["edit", insert_row + n, self.cache[insert_row + n], (self.cursor_col, self.cursor_row, self.display_offset_col, self.display_offset_row, self.offset_col)])
                 self.cache[insert_row + n] = line
                 if line.endswith("\n"):
+                    self.edit_history.append(["edit", insert_row + n, self.cache[insert_row + n], (self.cursor_col, self.cursor_row, self.display_offset_col, self.display_offset_row, self.offset_col)])
                     self.cache[insert_row + n] = self.cache[insert_row + n][:-1]
+                    self.edit_history.append(["insert_row", insert_row + n + 1, "", (self.cursor_col, self.cursor_row, self.display_offset_col, self.display_offset_row, self.offset_col)])
                     self.cache.insert(insert_row + n + 1, "")
             n += 1
         if n > 0:
@@ -505,6 +510,11 @@ class EditShell(object):
                 self.cursor_col, self.cursor_row, self.display_offset_col, self.display_offset_row, self.offset_col = op[4]
                 self.cursor_row -= 1
                 self.cursor_col = len(op[2])
+            elif op[0] == "insert_row":
+                self.cache.pop(op[1])
+                self.cursor_col, self.cursor_row, self.display_offset_col, self.display_offset_row, self.offset_col = op[3]
+                self.cursor_row -= 1
+                self.cursor_col = len(op[2])
             elif op[0] == "delete":
                 self.cache.insert(op[1], op[2])
                 self.cursor_col, self.cursor_row, self.display_offset_col, self.display_offset_row, self.offset_col = op[3]
@@ -528,6 +538,9 @@ class EditShell(object):
                 self.cache[op[1]] = op[2]
                 self.cache.insert(op[1] + 1, op[3])
                 self.cursor_col, self.cursor_row, self.display_offset_col, self.display_offset_row, self.offset_col = op[4]
+            elif op[0] == "insert_row":
+                self.cache.insert(op[1], op[2])
+                self.cursor_col, self.cursor_row, self.display_offset_col, self.display_offset_row, self.offset_col = op[3]
             elif op[0] == "delete":
                 self.cache.pop(op[1])
                 self.cursor_col, self.cursor_row, self.display_offset_col, self.display_offset_row, self.offset_col = op[3]
