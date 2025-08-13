@@ -164,3 +164,14 @@ def rmtree(target):
             uos.rmdir(target)
             yield target
     
+
+class ClipBoard(Object):
+    C = ""
+
+    @classmethod
+    def set(cls, content):
+        cls.C = content
+
+    @classmethod
+    def get(cls, content):
+        return cls.C
