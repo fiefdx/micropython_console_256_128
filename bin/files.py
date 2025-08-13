@@ -1,6 +1,7 @@
 import os
 import sys
 from math import ceil
+from io import StringIO
 
 from scheduler import Condition, Message
 from common import exists, path_join, get_size, path_split, mkdirs, rmtree, copy
@@ -317,8 +318,10 @@ class Explorer(object):
                         self.load()
                         self.pwd = self.path
                     elif f[1] == "F":
-                        file_path = path_join(self.path, f[0])
-                        self.edit(file_path)
+                        ext = f[0].split(".")[-1]
+                        if ext.lower() not in ("idx", "mpy", "wav", "mp3"):
+                            file_path = path_join(self.path, f[0])
+                            self.edit(file_path)
             elif c == "\b" or c == "BB":
                 parent, current = path_split(self.path)
                 if parent == "":
@@ -524,7 +527,9 @@ def main(*args, **kwargs):
         shell.enable_cursor = True
         shell.current_shell = None
         shell.scheduler.keyboard.scan_rows = 5
-        reason = sys.print_exception(e)
+        buf = StringIO()
+        sys.print_exception(e, buf)
+        reason = buf.getvalue()
         if reason is None:
             reason = "render failed"
         yield Condition.get().load(sleep = 0, send_msgs = [
