@@ -322,10 +322,19 @@ class EditShell(object):
             fp.write(self.cache[select_end_row][:select_end_col])
             fp.close()
             if cut:
-                self.cache[select_start_row] = self.cache[select_start_row][:select_start_col]
-                self.cache[select_end_row] = self.cache[select_end_row][select_end_col + 1:]
-                for row in range(select_start_row + 1, select_end_row):
-                    self.cache.pop(row)
+                self.edit_redo_cache.clear()
+                if select_start_col == 0:
+                    start_delete = select_start_row
+                else:
+                    start_delete = select_start_row + 1
+                    self.edit_history.append(["edit", select_start_row, self.cache[select_start_row], (self.cursor_col, self.cursor_row, self.display_offset_col, self.display_offset_row, self.offset_col)])
+                    self.cache[select_start_row] = self.cache[select_start_row][:select_start_col]
+                    self.edit_history.append(["edit", select_start_row, self.cache[select_start_row], (self.cursor_col, self.cursor_row, self.display_offset_col, self.display_offset_row, self.offset_col)])
+                for row in range(start_delete, select_end_row):
+                    self.edit_history.append(["delete", start_delete, self.cache[start_delete], (self.cursor_col, self.cursor_row, self.display_offset_col, self.display_offset_row, self.offset_col)])
+                    self.cache.pop(start_delete)
+                self.edit_history.append(["edit", start_delete, self.cache[start_delete], (self.cursor_col, self.cursor_row, self.display_offset_col, self.display_offset_row, self.offset_col)])
+                self.cache[start_delete] = self.cache[start_delete][select_end_col:]
 
     def get_select_lines(self):
         lines = []
