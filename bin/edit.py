@@ -130,7 +130,7 @@ class EditShell(object):
                 self.select_start_row = self.cursor_row
                 self.select_start_col = self.cursor_col + self.offset_col
             elif c == "Ctrl-V":
-                pass
+                self.paste()
             elif c == "ES":
                 if self.status == "saved":
                     self.exit = True
@@ -164,11 +164,11 @@ class EditShell(object):
             elif c == "Ctrl-C":
                 self.previous_mode = self.mode
                 self.mode = "edit"
-                ClipBoard.set("")
+                self.copy_into_clipboard()
             elif c == "Ctrl-X":
                 self.previous_mode = self.mode
                 self.mode = "edit"
-                ClipBoard.set("")
+                self.copy_into_clipboard(cut = True)
             elif c == "ES":
                 self.previous_mode = self.mode
                 self.mode = "edit"
@@ -270,6 +270,62 @@ class EditShell(object):
 
     def cr2xy(self, col, row):
         return (col * 6 + 3, row * 7 + 7)
+
+    def paste(self):
+        n = 0
+        insert_col = self.cursor_col + self.offset_col
+        insert_row = self.cursor_row
+        original_line = self.cache[insert_row]
+        for line in ClipBoard.iter_lines():
+            if n == 0:
+                self.cache[insert_row] = self.cache[insert_row][:insert_col] + line
+                if line.endswith("\n"):
+                    self.cache[insert_row] = self.cache[insert_row][:-1]
+                    self.cache.insert(insert_row + 1, "")
+            else:
+                self.cache[insert_row + n] = line
+                if line.endswith("\n"):
+                    self.cache[insert_row + n] = self.cache[insert_row + n][:-1]
+                    self.cache.insert(insert_row + n + 1, "")
+            n += 1
+        if n > 0:
+            self.cursor_col = len(self.cache[insert_row + n - 1])
+            self.offset_col = int(self.cursor_col / self.display_width) * self.display_width
+            self.cursor_col = self.cursor_col % self.display_width
+            self.cache[insert_row + n - 1] += original_line[insert_col + 1:]
+            self.cursor_row = insert_row + n - 1
+            if self.cursor_row - self.display_offset_row >= self.cache_size:
+                self.display_offset_row = self.cursor_row - self.cache_size + 1
+
+    def copy_into_clipboard(self, cut = False):
+        display_start = self.display_offset_row
+        display_end = self.display_offset_row + self.cache_size
+        select_start_col = self.select_start_col
+        select_start_row = self.select_start_row
+        select_end_col = self.cursor_col + self.offset_col
+        select_end_row = self.cursor_row
+        if select_start_row > select_end_row or (select_start_row == select_end_row and select_start_col > select_end_col):
+            select_end_col = self.select_start_col
+            select_end_row = self.select_start_row
+            select_start_col = self.cursor_col + self.offset_col
+            select_start_row = self.cursor_row
+        if select_start_row == select_end_row:
+            if select_start_col != select_end_col:
+                ClipBoard.set(self.cache[select_start_row][select_start_col: select_end_col + 1])
+                if cut:
+                    self.cache[select_start_row] = self.cache[select_start_row][:select_start_col] + self.cache[select_start_row][select_end_col + 1:]
+        else:
+            fp = ClipBoard.get_file()
+            fp.write(self.cache[select_start_row][select_start_col:] + "\n")
+            for row in range(select_start_row + 1, select_end_row):
+                fp.write(self.cache[row] + "\n")
+            fp.write(self.cache[select_end_row][:select_end_col])
+            fp.close()
+            if cut:
+                self.cache[select_start_row] = self.cache[select_start_row][:select_start_col]
+                self.cache[select_end_row] = self.cache[select_end_row][select_end_col + 1:]
+                for row in range(select_start_row + 1, select_end_row):
+                    self.cache.pop(row)
 
     def get_select_lines(self):
         lines = []

@@ -32,7 +32,7 @@ import font7
 from writer import Writer
 from tile_writer import Writer as TileWriter
 from scheduler import Scheluder, Condition, Task, Message
-from common import ticks_ms, ticks_add, ticks_diff, sleep_ms
+from common import ticks_ms, ticks_add, ticks_diff, sleep_ms, ClipBoard
 from shell import Shell
 from keyboard import KeyBoard
 sys.path.insert(0, "/bin")
@@ -465,6 +465,7 @@ def cursor(task, name, interval = 500, s = None, display_id = None, storage_id =
         
 def shell(task, name, scheduler = None, display_id = None, storage_id = None):
     yield Condition.get().load(sleep = 1000)
+    ClipBoard.set("")
     #s = Shell()
     s = Shell(display_size = (41, 18), cache_size = (-1, 50), history_length = 50, scheduler = scheduler, storage_id = storage_id, display_id = display_id)
     s.write_line("           Welcome to TinyShell")

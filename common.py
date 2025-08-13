@@ -166,12 +166,26 @@ def rmtree(target):
     
 
 class ClipBoard(object):
-    C = ""
+    path = "/clipboard.cache"
 
     @classmethod
     def set(cls, content):
-        cls.C = content
+        with open(cls.path, "w") as fp:
+            fp.write(content)
 
     @classmethod
-    def get(cls, content):
-        return cls.C
+    def get(cls):
+        with open(cls.path, "r") as fp:
+            return fp.read()
+
+    @classmethod
+    def iter_lines(cls):
+        with open(cls.path, "r") as fp:
+            line = fp.readline()
+            while line:
+                yield line
+                line = fp.readline()
+
+    @classmethod
+    def get_file(cls):
+        return open(cls.path, "w")
