@@ -158,6 +158,8 @@ class Explorer(object):
             {"s": "%s/%s/%s         " % (self.current_page + 1, self.total_pages, self.total), "c": " ", "x": 3, "y": 120},
             {"s": "% 20s" % self.warning, "c": " ", "x": 135, "y": 120}
         ]
+        render = [("clean_pointer", "rects"), ("border_lines", "lines"), ("borders", "rects"), ("status", "texts"), ("pointer", "rects"), ("contents", "texts")]
+        data = {}
         if self.mode == "":
             for f in self.cache:
                 name = f[0]
@@ -174,7 +176,12 @@ class Explorer(object):
             clean_pointer = [[1, self.previous_pointer_row * 7 + 7, 254, 8, 0], [0, 7, 256, 8, 0]]
             pointer = [[1, self.pointer_row * 7 + 7, 254, 8, 1]]
         elif self.mode == "edit":
-            frame = self.editor.cache_to_frame()
+            f = self.editor.get_frame()
+            frame = f["frame"]
+            if "render" in f:
+                for r in f["render"]:
+                    render.append(r)
+                    data[r[0]] = f[r[0]]
             # border_lines = [[188, 8, 188, 118, 0], [206, 8, 206, 118, 0], [2, 1, 2, 125, 0]]
             border_lines = []
             clean_pointer = [[1, self.previous_pointer_row * 7 + 7, 254, 8, 0], [1, self.pointer_row * 7 + 7, 254, 8, 0]]
@@ -228,16 +235,14 @@ class Explorer(object):
             clean_pointer = [[1, self.previous_pointer_row * 7 + 7, 254, 8, 0], [1, self.pointer_row * 7 + 7, 254, 8, 0]]
             pointer = [[0, 7, 256, 8, 1]]
             contents.append({"s": self.new_name, "c": " ", "x": 3, "y": 8})
-        data = {
-            "render": (("clean_pointer", "rects"), ("border_lines", "lines"), ("borders", "rects"), ("status", "texts"), ("pointer", "rects"), ("contents", "texts")),
-            "frame": frame,
-            "clean_pointer": clean_pointer,
-            "pointer": pointer,
-            "borders": borders,
-            "border_lines": border_lines,
-            "contents": contents,
-            "status": status,
-        }
+        data["render"] = render
+        data["frame"] = frame
+        data["clean_pointer"] = clean_pointer
+        data["pointer"] = pointer
+        data["borders"] = borders
+        data["border_lines"] = border_lines
+        data["contents"] = contents
+        data["status"] = status
         if self.shell.enable_cursor:
             data["cursor"] = self.get_cursor_position(1)
         return data
