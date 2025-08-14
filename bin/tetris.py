@@ -16,16 +16,16 @@ coroutine = True
 B = {
     0: [[
         "OOOO",
-        "XXXX",
         "OOOO",
+        "XXXX",
         "OOOO",
     ], ["OXOO",
         "OXOO",
         "OXOO",
         "OXOO",
     ], ["OOOO",
-        "XXXX",
         "OOOO",
+        "XXXX",
         "OOOO",
     ], ["OXOO",
         "OXOO",
@@ -75,32 +75,32 @@ B = {
         "OXX",
     ]],
     4: [[
+        "OOO",
         "OXX",
         "XXO",
-        "OOO",
-    ], ["OXO",
-        "OXX",
-        "OOX",
-    ], ["OXX",
+    ], ["XOO",
         "XXO",
-        "OOO",
-    ], ["OXO",
+        "OXO",
+    ], ["OOO",
         "OXX",
-        "OOX",
+        "XXO",
+    ], ["XOO",
+        "XXO",
+        "OXO",
     ]],
     5: [[
+        "OOO",
         "XXO",
         "OXX",
-        "OOO",
-    ], ["OOX",
+    ], ["OXO",
+        "XXO",
+        "XOO",
+    ], ["OOO",
+        "XXO",
         "OXX",
-        "OXO",
-    ], ["XXO",
-        "OXX",
-        "OOO",
-    ], ["OOX",
-        "OXX",
-        "OXO",
+    ], ["OXO",
+        "XXO",
+        "XOO",
     ]],
     6: [[
         "XX",
@@ -569,6 +569,80 @@ def main(*args, **kwargs):
     shell.disable_output = True
     shell.enable_cursor = False
     shell.scheduler.keyboard.scan_rows = 2
+    tiles = [
+        {"id": 160, "body": {
+            "tile": [
+                0b11111111,0b11111111,
+                0b00010000,0b00000000,
+                0b00100000,0b00000000,
+                0b00010000,0b00000000,
+                0b00001000,0b00000000,
+                0b00010000,0b00000000,
+                0b00001000,0b00000000,
+                0b00010000,0b00000000,
+                0b11111111,0b11111111,
+                0b00000000,0b00010000,
+                0b00000000,0b00010000,
+                0b00000000,0b00001000,
+                0b00000000,0b00010000,
+                0b00000000,0b00010000,
+                0b00000000,0b00010000,
+                0b00000000,0b00010000],
+            "width": 16, "height": 16
+        }},
+        {"id": 163, "body": {
+            "tile": [
+                0b11111111,0b11111111,
+                0b00010000,0b00000000,
+                0b00010000,0b00000000,
+                0b00010000,0b00000000,
+                0b00010000,0b00000000,
+                0b00010000,0b00000000,
+                0b00010000,0b00000000,
+                0b00010000,0b00000000,
+                0b11111111,0b11111111,
+                0b00000000,0b00010000,
+                0b00000000,0b00010000,
+                0b00000000,0b00010000,
+                0b00000000,0b00010000,
+                0b00000000,0b00010000,
+                0b00000000,0b00010000,
+                0b00000000,0b00010000],
+            "width": 16, "height": 16
+        }},
+        {"id": 67, "body": {
+            "tile": [
+                0b00000000,
+                0b00000000,
+                0b00000000,
+                0b00000000,
+                0b00000000,
+                0b00000000,
+                0b00000000,],
+            "width": 6, "height": 7
+        }},
+        {"id": 162, "body": {
+            "tile": [
+                0b00000000,0b00000000,
+                0b00000000,0b00000000,
+                0b00000000,0b00000000,
+                0b00000000,0b00000000,
+                0b00000000,0b00000000,
+                0b00000000,0b00000000,
+                0b00000000,0b00000000,
+                0b00000000,0b00000000,
+                0b00000000,0b00000000,
+                0b00000000,0b00000000,
+                0b00000000,0b00000000,
+                0b00000000,0b00000000,
+                0b00000000,0b00000000,
+                0b00000000,0b00000000,
+                0b00000000,0b00000000,
+                0b00000000,0b00000000],
+            "width": 16, "height": 16
+        }},
+    ]
+
     try:
         if len(kwargs["args"]) == 0:
             offset_x = 97
@@ -586,12 +660,47 @@ def main(*args, **kwargs):
             g = Game(width, height)
             g.place_brick()
             g.update("")
+            yield Condition.get().load(sleep = 0, send_msgs = [
+                Message.get().load({"clear": True}, receiver = display_id)
+            ])
+            yield Condition.get().load(sleep = 0, send_msgs = [
+                Message.get().load({"update_tiles": tiles}, receiver = display_id)
+            ])
             yield Condition.get().load(sleep = frame_interval, wait_msg = False, send_msgs = [
                 Message.get().load({
-                    "render": (("rects", "rects"),),
+                    "render": (("background", "tiles"), ("rects", "rects"), ("area_clear", "tiles"), ("text_clear", "tiles")),
+                    "background": {
+                        "data": [[160 for x in range(16)] for y in range(8)],
+                        "width": 16,
+                        "height": 8,
+                        "size_w": 16,
+                        "size_h": 16,
+                        "offset_x": 0,
+                        "offset_y": 0,
+                    },
+                    "area_clear": {
+                        "data": [[60 for x in range(10)] for y in range(20)],
+                        "width": 10,
+                        "height": 20,
+                        "size_w": 6,
+                        "size_h": 6,
+                        "offset_x": offset_x,
+                        "offset_y": offset_y,
+                    },
+                    "text_clear": {
+                        "data": [[67 for x in range(12)] for y in range(3)],
+                        "width": 12,
+                        "height": 3,
+                        "size_w": 6,
+                        "size_h": 7,
+                        "offset_x": 166,
+                        "offset_y": 7,
+                    },
                     "rects": [
                         [offset_x - 1, offset_y - 1, 62, 122, 1],
-                        [165, 28, 26, 26, 1],
+                        [165, 32, 26, 26, 1],
+                        [165, 6, 74, 23, 1],
+                        [0, 0, 256, 128, 1],
                 ]}, receiver = display_id)
             ])
             yield Condition.get().load(sleep = frame_interval, wait_msg = False, send_msgs = [
@@ -603,7 +712,7 @@ def main(*args, **kwargs):
                         "height": 4,
                         "size": size,
                         "offset_x": 166,
-                        "offset_y": 29,
+                        "offset_y": 33,
                     }
                 }, receiver = display_id)
             ])
@@ -621,17 +730,17 @@ def main(*args, **kwargs):
                     "texts": [{
                         "s": "score: %05d" % g.score,
                         "c": " " * 12,
-                        "x": 165,
+                        "x": 166,
                         "y": 7,
                     }, {
                         "s": "level: %02d" % (g.level + 1),
-                        "c": " " * 9,
-                        "x": 165,
+                        "c": " " * 12,
+                        "x": 166,
                         "y": 14,
                     }, {
                         "s": "pause" if g.pause else "          ",
-                        "c": " " * 5,
-                        "x": 165,
+                        "c": " " * 12,
+                        "x": 166,
                         "y": 21,
                     }],
                 }, receiver = display_id)
@@ -652,23 +761,23 @@ def main(*args, **kwargs):
                     texts.append({
                         "s": "score: %05d" % g.score,
                         "c": " " * 12,
-                        "x": 165,
+                        "x": 166,
                         "y": 7,
                     })
                     score = g.score
                 if level != g.level:
                     texts.append({
                         "s": "level: %02d" % (g.level + 1),
-                        "c": " " * 9,
-                        "x": 165,
+                        "c": " " * 12,
+                        "x": 166,
                         "y": 14,
                     })
                     level = g.level
                 if pause != g.pause:
                     texts.append({
-                        "s": "pause" if g.pause else "          ",
-                        "c": " " * 5,
-                        "x": 165,
+                        "s": "pause" if g.pause else "            ",
+                        "c": " " * 12,
+                        "x": 166,
                         "y": 21,
                     })
                     pause = g.pause
@@ -676,8 +785,8 @@ def main(*args, **kwargs):
                     texts.append({
                         "s": "game over!",
                         "c": " " * 5,
-                        "x": 165,
-                        "y": 55,
+                        "x": 166,
+                        "y": 61,
                     })
                 if brick.type != g.next_brick.type or brick.direction != g.next_brick.direction:
                     yield Condition.get().load(sleep = frame_interval, wait_msg = False, send_msgs = [
@@ -689,7 +798,7 @@ def main(*args, **kwargs):
                                 "height": 4,
                                 "size": size,
                                 "offset_x": 166,
-                                "offset_y": 29,
+                                "offset_y": 33,
                             }
                         }, receiver = display_id)
                     ])
