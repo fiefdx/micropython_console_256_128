@@ -8,7 +8,8 @@ from io import StringIO
 
 from shell import Shell
 from scheduler import Condition, Message
-from common import exists, path_join, isfile, isdir
+from common import exists, path_join, isfile, isdir, ticks_ms, ticks_diff
+from keyboard import KeyBoard
 
 coroutine = True
 
@@ -63,6 +64,9 @@ class Tank(object):
         self.bullet_speed = bullet_speed
         self.bullets = [Bullet(bullet_speed, self.id) for i in range(bullets)]
         self.live = False
+        self.next_direction = None
+        self.next_fire = None
+        self.next_fire_at = 0
         
     def set_live(self, x, y, direction):
         self.x = x
@@ -91,6 +95,7 @@ class Tank(object):
         for b in self.bullets:
             if not b.fired:
                 b.fire(self.x, self.y, self.direction)
+                self.next_fire_at = ticks_ms() + 500
                 break
                 
     def update_bullets(self, width, height, check_collision):
@@ -126,6 +131,50 @@ class Tank(object):
             else:
                 self.fire()
         self.update_bullets(width, height, check_collision)
+        
+    def update_player(self, keys, width, height, runnable, check_collision):
+        self.frames += 1
+        if self.frames >= self.speed:
+            self.frames = 0
+            if "UP" in keys:
+                if self.direction != "up":
+                    self.direction = "up"
+                elif runnable(self.x, self.y, "up"):
+                    if self.direction == "up":
+                        self.y -= 1
+            elif "DN" in keys:
+                if self.direction != "down":
+                    self.direction = "down"
+                elif runnable(self.x, self.y, "down"):
+                    if self.direction == "down":
+                        self.y += 1
+            elif "LT" in keys:
+                if self.direction != "left":
+                    self.direction = "left"
+                elif runnable(self.x, self.y, "left"):
+                    if self.direction == "left":
+                        self.x -= 1
+            elif "RT" in keys:
+                if self.direction != "right":
+                    self.direction = "right"
+                elif runnable(self.x, self.y, "right"):
+                    if self.direction == "right":
+                        self.x += 1
+        else:
+            if "UP" in keys:
+                if self.direction != "up":
+                    self.direction = "up"
+            elif "DN" in keys:
+                if self.direction != "down":
+                    self.direction = "down"
+            elif "LT" in keys:
+                if self.direction != "left":
+                    self.direction = "left"
+            elif "RT" in keys:
+                if self.direction != "right":
+                    self.direction = "right"
+        if ("BA" in keys or "\b" in keys) and ticks_diff(ticks_ms(), self.next_fire_at) > 0 and self.fire_ready():
+            self.fire()
 
 
 class World(object):
@@ -136,6 +185,7 @@ class World(object):
         self.frame_c = self.clear_frame()
         self.tanks = []
         self.player = None
+        self.kills = 0
         
     def clear_frame(self):
         data = []
@@ -146,7 +196,18 @@ class World(object):
         return data
         
     def have_space(self, x, y):
-        return any(self.frame_c[y-1][x-1:x+2]) is False and any(self.frame_c[y][x-1:x+2]) is False and any(self.frame_c[y+1][x-1:x+2]) is False
+        return any(self.frame_c[y-1][x-1:x+2]) is False and any(self.frame_c[y][x-1:x+2]) is False and any(self.frame_c[y+1][x-1:x+2]) is False and \
+               any(self.frame_p[y-1][x-1:x+2]) is False and any(self.frame_p[y][x-1:x+2]) is False and any(self.frame_p[y+1][x-1:x+2]) is False
+
+    def is_bullet(self, x, y):
+        for t in self.tanks:
+            for b in t.bullets:
+                if b.fired and b.x == x and b.y == y:
+                    return True
+        for b in self.player.bullets:
+            if b.fired and b.x == x and b.y == y:
+                return True
+        return False
 
     def runnable(self, x, y, direction):
         directions = {
@@ -155,9 +216,9 @@ class World(object):
             "right": ((2, -1), (2, 0), (2, 1)),
             "down": ((-1, 2), (0, 2), (1, 2)),
         }
-        # print([((self.height > y + d[1] >= 0 and self.width > x + d[0] >= 0) and not self.frame_p[y + d[1]][x + d[0]]) for d in directions[direction]])
-        # print(all([((self.height > y + d[1] >= 0 and self.width > x + d[0] >= 0) and not self.frame_p[y + d[1]][x + d[0]]) for d in directions[direction]]))
-        return all([((self.height > y + d[1] >= 0 and self.width > x + d[0] >= 0) and not self.frame_p[y + d[1]][x + d[0]] and not self.frame_c[y + d[1]][x + d[0]]) for d in directions[direction]])
+        return all([((self.height > y + d[1] >= 0 and self.width > x + d[0] >= 0) and \
+                     (not self.frame_p[y + d[1]][x + d[0]] and not self.frame_c[y + d[1]][x + d[0]]) or \
+                     self.is_bullet(x + d[0], y + d[1])) for d in directions[direction]])
         
     def place_tank(self, tank):
         directions = ["up", "left", "right", "down"]
@@ -171,8 +232,8 @@ class World(object):
             x, y = random.choice(positions)
             tank.set_live(x, y, direction)
 
-    def place_player(self, tank):
-        tank.set_live(10, 10, "up")
+    def place_player(self, tank, x, y):
+        tank.set_live(x, y, "up")
         self.player = tank
         self.player.live = True
             
@@ -232,6 +293,7 @@ class World(object):
                             pass
                         else:
                             t.live = False
+                            self.kills += 1
         if bullet.fired:
             for b in self.player.bricks():
                 if bullet.x == b[0] and bullet.y == b[1]:
@@ -239,44 +301,18 @@ class World(object):
                         bullet.fired = False
                         self.player.live = False
                         break
-
         
-    def update(self, key):
+    def update(self, keys):
         self.frame_p = self.frame_c
         self.frame_c = self.clear_frame()
-        if key == "UP":
-            if self.player.direction != "up":
-                self.player.direction = "up"
-            elif self.runnable(self.player.x, self.player.y, "up"):
-                if self.player.direction == "up":
-                    self.player.y -= 1
-        elif key == "DN":
-            if self.player.direction != "down":
-                self.player.direction = "down"
-            elif self.runnable(self.player.x, self.player.y, "down"):
-                if self.player.direction == "down":
-                    self.player.y += 1
-        elif key == "LT":
-            if self.player.direction != "left":
-                self.player.direction = "left"
-            elif self.runnable(self.player.x, self.player.y, "left"):
-                if self.player.direction == "left":
-                    self.player.x -= 1
-        elif key == "RT":
-            if self.player.direction != "right":
-                self.player.direction = "right"
-            elif self.runnable(self.player.x, self.player.y, "right"):
-                if self.player.direction == "right":
-                    self.player.x += 1
-        if (key == "BA" or key == "\b") and self.player.fire_ready():
-            self.player.fire()
-        self.player.update_bullets(self.width, self.height, self.check_collision)
+        self.player.update_player(keys, self.width, self.height, self.runnable, self.check_collision)
         if self.player.live:
             self.draw_tank(self.player)
+        self.player.update_bullets(self.width, self.height, self.check_collision)
         for t in self.tanks:
             if not t.live:
                 self.place_tank(t)
-            if t.live:
+            elif t.live:
                 t.update(self.width, self.height, self.runnable, self.check_collision)
                 self.draw_tank(t)
                 
@@ -287,6 +323,20 @@ class World(object):
                 if (self.frame_c[y][x] > 0 and self.frame_p[y][x] == 0) or (self.frame_c[y][x] == 0 and self.frame_p[y][x] > 0):
                     frame[y][x] = "x" if self.frame_c[y][x] else "o"
         return frame
+    
+    def reset(self):
+        self.frame_p = None
+        self.frame_c = self.clear_frame()
+        for t in self.tanks:
+            t.live = False
+            for b in t.bullets:
+                b.fired = False
+        for b in self.player.bullets:
+            b.fired = False
+        self.player.x = 16
+        self.player.y = 19
+        self.player.live = True
+        self.kills = 0
 
 
 def main(*args, **kwargs):
@@ -299,55 +349,74 @@ def main(*args, **kwargs):
     cursor_id = shell.cursor_id
     shell.disable_output = True
     shell.enable_cursor = False
+    shell.scheduler.keyboard.disable = True
     width, height = 21, 9
     try:
-        if len(kwargs["args"]) > 3:
-            width = int(kwargs["args"][0])
-            height = int(kwargs["args"][1])
-            size = int(kwargs["args"][2])
-            frame_interval = int(kwargs["args"][3])
-            yield Condition.get().load(sleep = 0, send_msgs = [
-                Message.get().load({"clear": True}, receiver = display_id)
-            ])
-            yield Condition.get().load(sleep = 0, send_msgs = [
-                Message.get().load({"enabled": False}, receiver = cursor_id)
-            ])
-            w = World(width, height)
-            # w.tanks.append(Tank(5, 1, 3))
-            # w.tanks.append(Tank(2, 1, 1))
-            # w.tanks.append(Tank(1, 1, 1))
-            w.tanks.append(Tank(5, 1, 3, 1))
-            w.tanks.append(Tank(5, 1, 3, 2))
-            w.tanks.append(Tank(5, 1, 3, 3))
-            w.tanks.append(Tank(5, 1, 3, 4))
-            w.place_player(Tank(5, 3, 1, 100))
-            w.update("")
-            yield Condition.get().load(sleep = frame_interval, wait_msg = False, send_msgs = [
-                Message.get().load({
-                    "render": (("bricks", "bricks"),),
-                    "bricks": {"offset_x": 0, "offset_y": 0, "data": w.get_diff_frame(), "width": width, "height": height, "size": size}}, receiver = display_id)
-            ])
-            c = None
-            msg = task.get_message()
-            if msg:
-                c = msg.content["msg"]
-                msg.release()
-            while c != "ES":
-                w.update(c)
-                c = ""
-                yield Condition.get().load(sleep = frame_interval, wait_msg = False, send_msgs = [
+        width = 31
+        height = 21
+        size = 6
+        frame_interval = 25
+        yield Condition.get().load(sleep = 0, send_msgs = [
+            Message.get().load({"clear": True}, receiver = display_id)
+        ])
+        yield Condition.get().load(sleep = 0, send_msgs = [
+            Message.get().load({"enabled": False}, receiver = cursor_id)
+        ])
+        yield Condition.get().load(sleep = 0, send_msgs = [
+            Message.get().load({
+                "render": (("borders", "rects"), ("status", "texts")),
+                "borders": [[0, 0, 188, 128, 1], [0, 0, 256, 128, 1]],
+                "status": [{"s": "kill: %05d" % 0, "c": " " * 10, "x": 189, "y": 2}],
+            }, receiver = display_id)
+        ])
+        k = KeyBoard()
+        w = World(width, height)
+        w.tanks.append(Tank(5, 1, 3, 1))
+        w.tanks.append(Tank(5, 1, 3, 2))
+        w.tanks.append(Tank(5, 1, 3, 3))
+        w.tanks.append(Tank(5, 1, 3, 4))
+        w.place_player(Tank(4, 3, 2, 100), 16, 19)
+        w.update("")
+        yield Condition.get().load(sleep = frame_interval, wait_msg = False, send_msgs = [
+            Message.get().load({
+                "render": (("bricks", "bricks"),),
+                "bricks": {"offset_x": 1, "offset_y": 1, "data": w.get_diff_frame(), "width": width, "height": height, "size": size}}, receiver = display_id)
+        ])
+        keys = k.scan_keys()
+        n = 0
+        # t = ticks_ms()
+        fs = ticks_ms()
+        while "ES" not in keys:
+            if "r" in keys:
+                w.reset()
+                yield Condition.get().load(sleep = 0, send_msgs = [
                     Message.get().load({
-                        "render": (("bricks", "bricks"),),
-                        "bricks": {"offset_x": 0, "offset_y": 0, "data": w.get_diff_frame(), "width": width, "height": height, "size": size}}, receiver = display_id)
+                        "clear": True,
+                        "render": (("borders", "rects"), ("status", "texts")),
+                        "borders": [[0, 0, 188, 128, 1], [0, 0, 256, 128, 1]],
+                        "status": [{"s": "kill: %05d" % w.kills, "c": " " * 10, "x": 189, "y": 2}],
+                    }, receiver = display_id)
                 ])
-                msg = task.get_message()
-                if msg:
-                    c = msg.content["msg"]
-                    msg.release()
-        else:
-            yield Condition.get().load(sleep = 0, send_msgs = [
-                Message.get().load({"output": "invalid parameters"}, receiver = shell_id)
+            w.update(keys)
+            # n += 1
+            # if n == 100:
+            #     n = 0
+            #     print("fps:", 100 / ((ticks_ms() - t) / 1000))
+            #     t = ticks_ms()
+            k.clear()
+            already_used_time = ticks_ms() - fs
+            sleep_time = 0
+            if frame_interval > already_used_time:
+                sleep_time = frame_interval - already_used_time
+            yield Condition.get().load(sleep = sleep_time, wait_msg = False, send_msgs = [
+                Message.get().load({
+                    "render": (("bricks", "bricks"), ("status", "texts")),
+                    "bricks": {"offset_x": 1, "offset_y": 1, "data": w.get_diff_frame(), "width": width, "height": height, "size": size},
+                    "status": [{"s": "kill: %05d" % w.kills, "c": " " * 10, "x": 189, "y": 2}],
+                }, receiver = display_id)
             ])
+            fs = ticks_ms()
+            keys = k.scan_keys()
         yield Condition.get().load(sleep = 0, send_msgs = [
             Message.get().load({"clear": True}, receiver = display_id)
         ])
@@ -357,6 +426,7 @@ def main(*args, **kwargs):
         shell.disable_output = False
         shell.enable_cursor = True
         shell.current_shell = None
+        shell.scheduler.keyboard.disable = False
         shell.loading = True
         yield Condition.get().load(sleep = 0, wait_msg = False, send_msgs = [
             Message.get().load({"output": ""}, receiver = shell_id)
@@ -371,6 +441,7 @@ def main(*args, **kwargs):
         shell.disable_output = False
         shell.enable_cursor = True
         shell.current_shell = None
+        shell.scheduler.keyboard.disable = False
         shell.loading = True
         buf = StringIO()
         sys.print_exception(e, buf)
