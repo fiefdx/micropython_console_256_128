@@ -311,7 +311,7 @@ def keyboard_input(task, name, scheduler = None, interval = 50, shell_id = None,
     key_sound = const(2000)
     while True:
         yield Condition.get().load(sleep = interval)
-        key = k.scan()
+        key, keys = k.scan()
         volume = k.get_volume()
         if key.startswith("contrast"):
             if volume > 0:
@@ -320,11 +320,11 @@ def keyboard_input(task, name, scheduler = None, interval = 50, shell_id = None,
         elif key in ("light-up", "light-down", "volume-up", "volume-down", "SH", "CP"):
             if volume > 0:
                 yield Condition.get().load(sleep = 0, send_msgs = [Message.get().load({"freq": key_sound, "volume": k.get_volume(), "length": 5}, receiver = scheduler.sound_id)])
-        elif key != "":
+        elif key != "" or len(keys) > 0:
             if volume > 0:
                 yield Condition.get().load(sleep = 0, send_msgs = [Message.get().load({"freq": key_sound, "volume": k.get_volume(), "length": 5}, receiver = scheduler.sound_id)])
             if scheduler.shell and scheduler.shell.session_task_id and scheduler.exists_task(scheduler.shell.session_task_id):
-                yield Condition.get().load(sleep = 0, send_msgs = [Message.get().load({"msg": key}, receiver = scheduler.shell.session_task_id)])
+                yield Condition.get().load(sleep = 0, send_msgs = [Message.get().load({"msg": key, "keys": keys}, receiver = scheduler.shell.session_task_id)])
             else:
                 yield Condition.get().load(sleep = 0, send_msgs = [Message.get().load({"char": key}, receiver = shell_id)])
         if keyboard_mode != k.mode:
