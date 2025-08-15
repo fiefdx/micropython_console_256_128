@@ -48,8 +48,10 @@ def main(*args, **kwargs):
             Message.get().load({"output": ""}, receiver = shell_id)
         ])
         shell.enable_cursor = True
+        shell.loading = True
     except Exception as e:
         yield Condition.get().load(sleep = 0, send_msgs = [
             Message.get().load({"output": sys.print_exception(e)}, receiver = shell_id)
         ])
         shell.enable_cursor = True
+        shell.loading = True
