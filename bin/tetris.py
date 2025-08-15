@@ -514,20 +514,20 @@ class Game(object):
             for x, c in enumerate(line):
                 self.frame_c[y][x] = self.data[y][x]
 
-    def update(self, key):
+    def update(self, keys):
         dx = 0
         dy = 0
-        if key == "LT":
+        if "LT" in keys:
             dx = -1
-        elif key == "RT":
+        elif "RT" in keys:
             dx = 1
-        elif key == "DN":
+        elif "DN" in keys:
             dy = 1
-        elif key in ("BA", "\b"):
+        if "\b" in keys:
             self.brick.rotate(self.data)
-        elif key in ("p", "P"):
+        if "p" in keys:
             self.pause = True if not self.pause else False
-        elif key == "UP":
+        if "UP" in keys:
             self.brick.put_down(self.data)
         if not self.pause and not self.game_over:
             self.frame_p = self.frame_c
@@ -568,7 +568,7 @@ def main(*args, **kwargs):
     cursor_id = shell.cursor_id
     shell.disable_output = True
     shell.enable_cursor = False
-    shell.scheduler.keyboard.scan_rows = 2
+    shell.scheduler.keyboard.game_mode = True
     tiles = [
         {"id": 160, "body": {
             "tile": [
@@ -746,16 +746,19 @@ def main(*args, **kwargs):
                 }, receiver = display_id)
             ])
             c = None
+            keys= []
             msg = task.get_message()
             if msg:
                 c = msg.content["msg"]
+                keys = msg.content["keys"]
                 msg.release()
             score = g.score
             level = g.level
             pause = g.pause
             brick = g.next_brick
             while c != "ES":
-                g.update(c)
+                g.update(keys)
+                keys.clear()
                 texts = []
                 if score != g.score:
                     texts.append({
@@ -820,6 +823,7 @@ def main(*args, **kwargs):
                 msg = task.get_message()
                 if msg:
                     c = msg.content["msg"]
+                    keys = msg.content["keys"]
                     msg.release()
                 else:
                     c = None
@@ -836,7 +840,7 @@ def main(*args, **kwargs):
         shell.disable_output = False
         shell.enable_cursor = True
         shell.current_shell = None
-        shell.scheduler.keyboard.scan_rows = 5
+        shell.scheduler.keyboard.game_mode = False
         shell.loading = True
         yield Condition.get().load(sleep = 0, wait_msg = False, send_msgs = [
             Message.get().load({"output": ""}, receiver = shell_id)
@@ -851,7 +855,7 @@ def main(*args, **kwargs):
         shell.disable_output = False
         shell.enable_cursor = True
         shell.current_shell = None
-        shell.scheduler.keyboard.scan_rows = 5
+        shell.scheduler.keyboard.game_mode = False
         shell.loading = True
         reason = sys.print_exception(e)
         if reason is None:
