@@ -46,9 +46,12 @@ class KeyBoard(object):
         self.mode = "DF" # default
         self.button = ""
         self.continue_press_counter = 0
-        self.continue_press_interval = const(15)
+        self.continue_press_interval = const(8)
         self.update_light_level()
         self.scan_rows = 5
+        self.game_mode = False
+        self.game_press_counters = {"UP": 0, "DN": 0, "LT": 0, "RT": 0, "p": 0, "\b": 0, ";": 0, "'": 0}
+        self.disable = False
         
     def get_volume(self):
         return self.volume_levels[self.volume]
@@ -74,91 +77,128 @@ class KeyBoard(object):
     def clear(self):
         self.button = ""
         self.buttons.clear()
-
-    def scan(self):
+        
+    def scan_keys(self):
+        self.buttons.clear()
         for x in range(12):
             self.update_scan_lines(0xffff ^ (1 << x))
-            for y in range(self.scan_rows):
+            for y in range(2):
+                keys = self.keys[y][x]
+                key = keys[0]
                 if self.y_lines[y].value() == False: # pressd
-                    if self.press_buttons[y][x]: # already pressed
-                        if self.continue_press_counter >= self.continue_press_interval and self.continue_press_counter % (self.continue_press_interval // 3) == 0:
-                            keys = self.keys[y][x]
-                            key = keys[0]
-                            if self.mode == "SH":
-                                if len(keys) > 2:
-                                    key = keys[2]
-                            elif self.mode == "CP":
-                                key = keys[1]
-                            if key == "light-up":
-                                self.light += 1
-                                if self.light >= self.light_max:
-                                    self.light = self.light_max - 1
-                                self.update_light_level()
-                            elif key == "light-down":
-                                self.light -= 1
-                                if self.light <= 0:
-                                    self.light = 0
-                                self.update_light_level()
-                            if key == "volume-up":
-                                self.volume += 1
-                                if self.volume >= self.volume_max:
-                                    self.volume = self.volume_max - 1
-                            elif key == "volume-down":
-                                self.volume -= 1
-                                if self.volume <= 0:
-                                    self.volume = 0
-                            #if key not in ("light-up", "light-down", "SH", "CP"):
-                            self.button = key
-                                #self.buttons.append(key)
-                        self.continue_press_counter += 1
-                    self.press_buttons[y][x] = True
-                    # print("press: ", self.keys[y][x])
-                else: # not press
-                    if self.press_buttons[y][x]:
-                        if self.continue_press_counter > 0:
-                            self.continue_press_counter = 0
-                        # print("release: ", self.keys[y][x])
-                        if self.keys[y][x][0] == "SH": # SH mode change
-                            if self.mode == "DF":
-                                self.mode = "SH"
-                            elif self.mode == "SH":
-                                self.mode = "DF"
-                            self.button = "SH"
-                        elif self.keys[y][x][0] == "CP": # CP mode change
-                            if self.mode == "DF":
-                                self.mode = "CP"
-                            elif self.mode == "CP":
-                                self.mode = "DF"
-                            self.button = "CP"
-                        else: # other keys
-                            keys = self.keys[y][x]
-                            key = keys[0]
-                            if self.mode == "SH":
-                                if len(keys) > 2:
-                                    key = keys[2]
-                            elif self.mode == "CP":
-                                key = keys[1]
-                            if key == "light-up":
-                                self.light += 1
-                                if self.light >= self.light_max:
-                                    self.light = self.light_max - 1
-                                self.update_light_level()
-                            elif key == "light-down":
-                                self.light -= 1
-                                if self.light <= 0:
-                                    self.light = 0
-                                self.update_light_level()
-                            if key == "volume-up":
-                                self.volume += 1
-                                if self.volume >= self.volume_max:
-                                    self.volume = self.volume_max - 1
-                            elif key == "volume-down":
-                                self.volume -= 1
-                                if self.volume <= 0:
-                                    self.volume = 0
-                            #if key not in ("light-up", "light-down", "SH", "CP"):
-                            self.button = key
-                                #self.buttons.append(key)
-                            # print("click: ", key, self.mode)
-                    self.press_buttons[y][x] = False
-        return self.button
+                    self.buttons.append(key)
+        return self.buttons
+
+    def scan(self):
+        if self.game_mode:
+            self.buttons.clear()
+            for x in range(12):
+                self.update_scan_lines(0xffff ^ (1 << x))
+                for y in range(2):
+                    keys = self.keys[y][x]
+                    key = keys[0]
+                    if self.y_lines[y].value() == False: # pressd
+                        if self.press_buttons[y][x]: # already pressed
+                            if key in self.game_press_counters:
+                                if self.game_press_counters[key] % 6 == 0:
+                                    self.buttons.append(key)
+                                self.game_press_counters[key] += 1
+                        else:
+                            if key in self.game_press_counters:
+                                if self.game_press_counters[key] == 0:
+                                    self.buttons.append(key)
+                                    self.game_press_counters[key] += 1
+                            else:
+                                self.button = key
+                        self.press_buttons[y][x] = True
+                    else: # not press
+                        if self.press_buttons[y][x]:
+                            if key in self.game_press_counters:
+                                self.game_press_counters[key] = 0
+                        self.press_buttons[y][x] = False
+        else:
+            for x in range(12):
+                self.update_scan_lines(0xffff ^ (1 << x))
+                for y in range(self.scan_rows):
+                    if self.y_lines[y].value() == False: # pressd
+                        if self.press_buttons[y][x]: # already pressed
+                            if self.continue_press_counter % self.continue_press_interval == 0:
+                                keys = self.keys[y][x]
+                                key = keys[0]
+                                if self.mode == "SH":
+                                    if len(keys) > 2:
+                                        key = keys[2]
+                                elif self.mode == "CP":
+                                    key = keys[1]
+                                if key == "light-up":
+                                    self.light += 1
+                                    if self.light >= self.light_max:
+                                        self.light = self.light_max - 1
+                                    self.update_light_level()
+                                elif key == "light-down":
+                                    self.light -= 1
+                                    if self.light <= 0:
+                                        self.light = 0
+                                    self.update_light_level()
+                                if key == "volume-up":
+                                    self.volume += 1
+                                    if self.volume >= self.volume_max:
+                                        self.volume = self.volume_max - 1
+                                elif key == "volume-down":
+                                    self.volume -= 1
+                                    if self.volume <= 0:
+                                        self.volume = 0
+                                #if key not in ("light-up", "light-down", "SH", "CP"):
+                                self.button = key
+                            self.continue_press_counter += 1
+                        else:
+                            if self.continue_press_counter == 0:
+                                keys = self.keys[y][x]
+                                key = keys[0]
+                                if self.keys[y][x][0] == "SH": # SH mode change
+                                    if self.mode == "DF":
+                                        self.mode = "SH"
+                                    elif self.mode == "SH":
+                                        self.mode = "DF"
+                                    self.button = "SH"
+                                elif self.keys[y][x][0] == "CP": # CP mode change
+                                    if self.mode == "DF":
+                                        self.mode = "CP"
+                                    elif self.mode == "CP":
+                                        self.mode = "DF"
+                                    self.button = "CP"
+                                else: # other keys
+                                    if self.mode == "SH":
+                                        if len(keys) > 2:
+                                            key = keys[2]
+                                    elif self.mode == "CP":
+                                        key = keys[1]
+                                    if key == "light-up":
+                                        self.light += 1
+                                        if self.light >= self.light_max:
+                                            self.light = self.light_max - 1
+                                        self.update_light_level()
+                                    elif key == "light-down":
+                                        self.light -= 1
+                                        if self.light <= 0:
+                                            self.light = 0
+                                        self.update_light_level()
+                                    if key == "volume-up":
+                                        self.volume += 1
+                                        if self.volume >= self.volume_max:
+                                            self.volume = self.volume_max - 1
+                                    elif key == "volume-down":
+                                        self.volume -= 1
+                                        if self.volume <= 0:
+                                            self.volume = 0
+                                    #if key not in ("light-up", "light-down", "SH", "CP"):
+                                    self.button = key
+                                self.continue_press_counter += 1
+                        self.press_buttons[y][x] = True
+                        # print("press: ", self.keys[y][x])
+                    else: # not press
+                        if self.press_buttons[y][x]:
+                            if self.continue_press_counter > 0:
+                                self.continue_press_counter = 0
+                        self.press_buttons[y][x] = False
+        return self.button, self.buttons
