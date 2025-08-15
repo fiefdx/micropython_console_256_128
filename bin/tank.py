@@ -231,6 +231,8 @@ class World(object):
         if positions:
             x, y = random.choice(positions)
             tank.set_live(x, y, direction)
+            return True
+        return False
 
     def place_player(self, tank, x, y):
         tank.set_live(x, y, "up")
@@ -311,7 +313,8 @@ class World(object):
         self.player.update_bullets(self.width, self.height, self.check_collision)
         for t in self.tanks:
             if not t.live:
-                self.place_tank(t)
+                if self.place_tank(t):
+                    self.draw_tank(t)
             elif t.live:
                 t.update(self.width, self.height, self.runnable, self.check_collision)
                 self.draw_tank(t)
