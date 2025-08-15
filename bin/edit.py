@@ -599,12 +599,14 @@ def main(*args, **kwargs):
             ])
         shell.disable_output = False
         shell.current_shell = None
+        shell.loading = True
         yield Condition.get().load(sleep = 0, wait_msg = False, send_msgs = [
             Message.get().load({"output": ""}, receiver = shell_id)
         ])
     except Exception as e:
         shell.disable_output = False
         shell.current_shell = None
+        shell.loading = True
         buf = StringIO()
         sys.print_exception(e, buf)
         reason = buf.getvalue()

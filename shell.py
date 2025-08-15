@@ -38,6 +38,7 @@ class Shell(object):
         self.history_file_path = const(history_file_path)
         self.bin_path = const(bin_path)
         self.stats = ""
+        self.loading = True
         self.load_history()
     
     def load_history(self):
@@ -100,10 +101,16 @@ class Shell(object):
         return result
         
     def get_display_frame(self):
-        # return self.cache[-self.display_height:]
+        data = {}
         frame = self.cache_to_frame()[-self.display_height:]
         frame.append(self.stats)
-        return frame
+        data["frame"] = frame
+        data["cursor"] = self.get_cursor_position(1)
+        if self.loading:
+            data["render"] = (("borders", "rects"),)
+            data["borders"] = [[0, 0, 256, 127, 1], [0, 119, 256, 8, 1]]
+            self.loading = False
+        return data
     
     def cache_to_frame_history(self):
         self.frame_history.clear()
@@ -213,7 +220,7 @@ class Shell(object):
         self.current_col = len(self.cache[-1])
 
     def update_stats(self, d):
-        self.stats = "CPU%s:%3d%% RAM:%3d%%(%.2fK/%.2fK)" % (d[0], d[1], d[2], d[3]/1024, d[4]/1024)
+        self.stats = "C%3d%% R%3d%%(%.2fK|%.2fK)" % (d[1], d[2], d[3] / 1024, d[4] / 1024)
     
     def input_char(self, c):
         try:

@@ -476,7 +476,7 @@ def shell(task, name, scheduler = None, display_id = None, storage_id = None):
     s = Shell(display_size = (41, 17), cache_size = (-1, 50), history_length = 50, scheduler = scheduler, storage_id = storage_id, display_id = display_id)
     s.write_line("           Welcome to TinyShell")
     s.write_char("\n")
-    yield Condition.get().load(sleep = 0, send_msgs = [Message.get().load({"frame": s.get_display_frame()}, receiver = display_id)])
+    yield Condition.get().load(sleep = 0, send_msgs = [Message.get().load(s.get_display_frame(), receiver = display_id)])
     cursor_id = scheduler.add_task(Task.get().load(cursor, "cursor", kwargs = {"interval": 500, "s": s, "display_id": display_id, "storage_id": storage_id}))
     scheduler.shell = s
     s.cursor_id = cursor_id
@@ -490,7 +490,7 @@ def shell(task, name, scheduler = None, display_id = None, storage_id = None):
                     Message.get().load({"clear": True}, receiver = display_id)
                 ])
                 yield Condition.get().load(sleep = 0, send_msgs = [
-                    Message.get().load({"frame": s.get_display_frame(), "cursor": s.get_cursor_position(1)}, receiver = display_id)
+                    Message.get().load(s.get_display_frame(), receiver = display_id)
                 ])
         if "keyboard_mode" in msg.content:
             yield Condition.get().load(sleep = 0, send_msgs = [
@@ -501,28 +501,28 @@ def shell(task, name, scheduler = None, display_id = None, storage_id = None):
             s.input_char(c)
             if not s.disable_output:
                 yield Condition.get().load(sleep = 0, send_msgs = [
-                    Message.get().load({"frame": s.get_display_frame(), "cursor": s.get_cursor_position(1)}, receiver = display_id)
+                    Message.get().load(s.get_display_frame(), receiver = display_id)
                 ])
         elif "output" in msg.content:
             output = msg.content["output"]
             s.write_lines(output, end = True)
             if not s.disable_output:
                 yield Condition.get().load(sleep = 0, send_msgs = [
-                    Message.get().load({"frame": s.get_display_frame(), "cursor": s.get_cursor_position(1)}, receiver = display_id)
+                    Message.get().load(s.get_display_frame(), receiver = display_id)
                 ])
         elif "output_part" in msg.content:
             output = msg.content["output_part"]
             s.write_lines(output, end = False)
             if not s.disable_output:
                 yield Condition.get().load(sleep = 0, send_msgs = [
-                    Message.get().load({"frame": s.get_display_frame(), "cursor": s.get_cursor_position(1)}, receiver = display_id)
+                    Message.get().load(s.get_display_frame(), receiver = display_id)
                 ])
         elif "output_char" in msg.content:
             c = msg.content["output_char"]
             s.write_char(c)
             if not s.disable_output:
                 yield Condition.get().load(sleep = 0, send_msgs = [
-                    Message.get().load({"frame": s.get_display_frame(), "cursor": s.get_cursor_position(1)}, receiver = display_id)
+                    Message.get().load(s.get_display_frame(), receiver = display_id)
                 ])
         elif "frame" in msg.content:
             yield Condition.get().load(sleep = 0, send_msgs = [
@@ -532,7 +532,7 @@ def shell(task, name, scheduler = None, display_id = None, storage_id = None):
             s.update_stats(msg.content["stats"])
             if not s.disable_output:
                 yield Condition.get().load(sleep = 0, send_msgs = [
-                    Message.get().load({"frame": s.get_display_frame(), "cursor": s.get_cursor_position(1)}, receiver = display_id)
+                    Message.get().load(s.get_display_frame(), receiver = display_id)
                 ])
         msg.release()
             
