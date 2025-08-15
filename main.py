@@ -54,8 +54,8 @@ def monitor(task, name, scheduler = None, display_id = None):
         #print(monitor_msg)
         #print(len(scheduler.tasks))
         #scheduler.add_task(Task.get().load(free.main, "test", condition = Condition.get(), kwargs = {"args": [], "shell_id": scheduler.shell_id}))
-        # ram_free = gc.mem_free()
-        # ram_used = gc.mem_alloc()
+        ram_free = gc.mem_free()
+        ram_used = gc.mem_alloc()
         # monitor_msg = "R%6.2f%%|F%7.2fk/%d|U%7.2fk/%d" % (100.0 - (ram_free * 100 / (264 * 1024)),
         #                                                   ram_free / 1024,
         #                                                   ram_free,
@@ -63,8 +63,14 @@ def monitor(task, name, scheduler = None, display_id = None):
         #                                                   ram_used)
         # print(monitor_msg)
         # print(Message.remain(), Condition.remain(), Task.remain())
-        yield Condition.get().load(sleep = 1000)
-        #yield Condition(sleep = 100, send_msgs = [Message.get().load({"output": monitor_msg}, receiver = scheduler.shell_id)])
+        # yield Condition.get().load(sleep = 1000)
+        yield Condition.get().load(
+            sleep = 1000,
+            send_msgs = [Message.get().load(
+                {"stats": (scheduler.cpu, int(100 - scheduler.idle), 100.0 - (ram_free * 100 / (264 * 1024)), ram_free, ram_used)},
+                receiver = scheduler.shell_id
+            )]
+        )
 
 
 def render_tiles(name, msg, tile_wri):
@@ -467,7 +473,7 @@ def shell(task, name, scheduler = None, display_id = None, storage_id = None):
     yield Condition.get().load(sleep = 1000)
     ClipBoard.set("")
     #s = Shell()
-    s = Shell(display_size = (41, 18), cache_size = (-1, 50), history_length = 50, scheduler = scheduler, storage_id = storage_id, display_id = display_id)
+    s = Shell(display_size = (41, 17), cache_size = (-1, 50), history_length = 50, scheduler = scheduler, storage_id = storage_id, display_id = display_id)
     s.write_line("           Welcome to TinyShell")
     s.write_char("\n")
     yield Condition.get().load(sleep = 0, send_msgs = [Message.get().load({"frame": s.get_display_frame()}, receiver = display_id)])
@@ -522,6 +528,12 @@ def shell(task, name, scheduler = None, display_id = None, storage_id = None):
             yield Condition.get().load(sleep = 0, send_msgs = [
                 Message.get().load(msg.content, receiver = display_id)
             ])
+        elif "stats" in msg.content:
+            s.update_stats(msg.content["stats"])
+            if not s.disable_output:
+                yield Condition.get().load(sleep = 0, send_msgs = [
+                    Message.get().load({"frame": s.get_display_frame(), "cursor": s.get_cursor_position(1)}, receiver = display_id)
+                ])
         msg.release()
             
             
