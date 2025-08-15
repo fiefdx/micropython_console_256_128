@@ -15,7 +15,7 @@ def main(*args, **kwargs):
     shell_id = kwargs["shell_id"]
     shell = kwargs["shell"]
     shell.enable_cursor = False
-    width, height = 42, 18
+    width, height = 42, 17
     i2c = I2C(1, scl=Pin(27), sda=Pin(26), freq=100000)
     ups = ds3231(i2c)
     try:

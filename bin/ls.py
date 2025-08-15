@@ -45,7 +45,7 @@ def main(*args, **kwargs):
             yield Condition.get().load(sleep = 0, send_msgs = [
                 Message.get().load({"output_part": line}, receiver = shell_id)
             ])
-            page_size = 18
+            page_size = 17
             exit = False
             n = 2
             fs = os.ilistdir(path)

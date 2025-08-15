@@ -518,6 +518,7 @@ def main(*args, **kwargs):
         shell.enable_cursor = True
         shell.current_shell = None
         shell.scheduler.keyboard.scan_rows = 5
+        shell.loading = True
         yield Condition.get().load(sleep = 0, wait_msg = False, send_msgs = [
             Message.get().load({"output": ""}, receiver = shell_id)
         ])
@@ -532,6 +533,7 @@ def main(*args, **kwargs):
         shell.enable_cursor = True
         shell.current_shell = None
         shell.scheduler.keyboard.scan_rows = 5
+        shell.loading = True
         buf = StringIO()
         sys.print_exception(e, buf)
         reason = buf.getvalue()
