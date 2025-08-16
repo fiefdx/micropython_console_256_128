@@ -224,7 +224,7 @@ def cursor(task, name, interval = 500, s = None, display_id = None, storage_id =
 def shell(task, name, scheduler = None, display_id = None, storage_id = None):
     yield Condition.get().load(sleep = 1000)
     #s = Shell()
-    s = BasicShell(display_size = (41, 18), cache_size = (-1, 50), history_length = 20, scheduler = scheduler, storage_id = storage_id, display_id = display_id)
+    s = BasicShell(display_size = (41, 18), cache_size = (-1, 36), history_length = 20, scheduler = scheduler, storage_id = storage_id, display_id = display_id)
     # print = s.print
     Token.print = s.print
     s.write_line("            Welcome to PyBASIC")
