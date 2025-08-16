@@ -3,7 +3,7 @@ import gc
 import sys
 import time
 import random
-from math import ceil
+from math import ceil, sqrt
 from io import StringIO
 
 from shell import Shell
@@ -67,6 +67,7 @@ class Tank(object):
         self.next_direction = None
         self.next_fire = None
         self.next_fire_at = 0
+        self.next_live_at = 0
         
     def set_live(self, x, y, direction):
         self.x = x
@@ -90,46 +91,61 @@ class Tank(object):
             if not b.fired:
                 return True
         return False
+
+    def no_fired_bullet(self):
+        for b in self.bullets:
+            if b.fired:
+                return False
+        return True
     
     def fire(self):
+        directions = {
+            "up": (0, -1),
+            "left": (-1, 0),
+            "right": (1, 0),
+            "down": (0, 1),
+        }
         for b in self.bullets:
             if not b.fired:
-                b.fire(self.x, self.y, self.direction)
+                d = directions[self.direction]
+                b.fire(self.x + d[0], self.y + d[1], self.direction)
                 self.next_fire_at = ticks_ms() + 500
                 break
                 
     def update_bullets(self, width, height, check_collision):
         for b in self.bullets:
-            b.update(width, height, check_collision)
+            if b.fired:
+                b.update(width, height, check_collision)
         
     def update(self, width, height, runnable, check_collision):
-        self.frames += 1
-        if self.frames >= self.speed:
-            self.frames = 0
-            next_step = "forward"
-            if self.fire_ready():
-                next_step = random.choice(["forward", "forward", "forward", "turn", "fire"])
-            else:
-                next_step = random.choice(["forward", "forward", "forward", "turn"])
-            if next_step == "forward":
-                if self.direction == "up":
-                    if self.y > 1 and runnable(self.x, self.y, self.direction):
-                        self.y -= 1
-                elif self.direction == "down" and runnable(self.x, self.y, self.direction):
-                    if self.y < height - 2:
-                        self.y += 1
-                elif self.direction == "left" and runnable(self.x, self.y, self.direction):
-                    if self.x > 1:
-                        self.x -= 1
-                elif self.direction == "right" and runnable(self.x, self.y, self.direction):
-                    if self.x < width - 2:
-                        self.x += 1
-            elif next_step == "turn":
-                directions = ["up", "left", "right", "down"]
-                directions.remove(self.direction)
-                self.direction = random.choice(directions)
-            else:
-                self.fire()
+        if self.live:
+            self.frames += 1
+            if self.frames >= self.speed:
+                self.frames = 0
+                next_step = "forward"
+                if self.fire_ready():
+                    next_step = random.choice(["forward", "forward", "forward", "turn", "fire"])
+                else:
+                    next_step = random.choice(["forward", "forward", "forward", "turn"])
+                if next_step == "forward":
+                    if self.direction == "up":
+                        if self.y > 1 and runnable(self.x, self.y, self.direction):
+                            self.y -= 1
+                    elif self.direction == "down" and runnable(self.x, self.y, self.direction):
+                        if self.y < height - 2:
+                            self.y += 1
+                    elif self.direction == "left" and runnable(self.x, self.y, self.direction):
+                        if self.x > 1:
+                            self.x -= 1
+                    elif self.direction == "right" and runnable(self.x, self.y, self.direction):
+                        if self.x < width - 2:
+                            self.x += 1
+                elif next_step == "turn":
+                    directions = ["up", "left", "right", "down"]
+                    directions.remove(self.direction)
+                    self.direction = random.choice(directions)
+                else:
+                    self.fire()
         self.update_bullets(width, height, check_collision)
         
     def update_player(self, keys, width, height, runnable, check_collision):
@@ -268,6 +284,8 @@ class World(object):
             self.frame_c[tank.y-1][tank.x] = tank.id
             self.frame_c[tank.y+1][tank.x-1] = tank.id
             self.frame_c[tank.y-1][tank.x-1] = tank.id
+
+    def draw_bullets(self, tank):
         for b in tank.bullets:
             if b.fired:
                 self.frame_c[b.y][b.x] = tank.id
@@ -287,15 +305,20 @@ class World(object):
                     break
         if bullet.fired:
             for t in self.tanks:
-                for b in t.bricks():
-                    if bullet.x == b[0] and bullet.y == b[1]:
-                        if bullet.id != t.id:
-                            bullet.fired = False
-                        if bullet.id != self.player.id:
-                            pass
-                        else:
-                            t.live = False
-                            self.kills += 1
+                if t.live:
+                    for b in t.bricks():
+                        if bullet.x == b[0] and bullet.y == b[1]:
+                            if bullet.id == self.player.id:
+                                t.live = False
+                                t.next_live_at = ticks_ms() + 1000
+                                self.kills += 1
+                                for tb in t.bullets:
+                                    for bb in t.bricks():
+                                        if tb.x == bb[0] and tb.y == bb[1]:
+                                            tb.fired = False
+                            if bullet.id != t.id:
+                                bullet.fired = False
+                                break
         if bullet.fired:
             for b in self.player.bricks():
                 if bullet.x == b[0] and bullet.y == b[1]:
@@ -311,13 +334,16 @@ class World(object):
         if self.player.live:
             self.draw_tank(self.player)
         self.player.update_bullets(self.width, self.height, self.check_collision)
+        self.draw_bullets(self.player)
         for t in self.tanks:
-            if not t.live:
+            t.update(self.width, self.height, self.runnable, self.check_collision)
+            if not t.live and ticks_ms() > t.next_live_at and t.no_fired_bullet():
                 if self.place_tank(t):
                     self.draw_tank(t)
             elif t.live:
-                t.update(self.width, self.height, self.runnable, self.check_collision)
                 self.draw_tank(t)
+            # t.update_bullets(self.width, self.height, self.check_collision)
+            self.draw_bullets(t)
                 
     def get_diff_frame(self):
         frame = self.clear_frame()
