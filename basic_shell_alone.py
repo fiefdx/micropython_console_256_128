@@ -197,195 +197,199 @@ class BasicShell(object):
         return self.current_col, self.current_row if self.current_row <= (self.display_height - 1) else (self.display_height - 1), self.cursor_color if c is None else c
     
     def input_char(self, c):
-        if c == "\n":
-            cmd = self.cache[-1].strip()
-            if cmd.startswith(self.prompt_c):
-                cmd = cmd[len(self.prompt_c):]
-            if len(cmd) > 0:
-                if cmd.lower() == "exit":
-                    self.history.append(self.cache[-1][len(self.prompt_c):])
-                    self.write_history(self.cache[-1][len(self.prompt_c):])
-                    if exists("/main.basic.py"):
-                        uos.rename("/main.py", "/main.shell.py")
-                        uos.rename("/main.basic.py", "/main.py")
-                        machine.soft_reset()
-                    elif exists("/main.shell.py"):
-                        uos.rename("/main.py", "/main.basic.py")
-                        uos.rename("/main.shell.py", "/main.py")
-                        machine.soft_reset()
-                elif cmd.startswith("ls"):
-                    self.history.append(self.cache[-1][len(self.prompt_c):])
-                    self.write_history(self.cache[-1][len(self.prompt_c):])
-                    ps = cmd.replace("ls", "").strip().split(" ")
-                    args = ps
-                    self.print(self.ls(args))
-                elif cmd.startswith("cd"):
-                    self.history.append(self.cache[-1][len(self.prompt_c):])
-                    self.write_history(self.cache[-1][len(self.prompt_c):])
-                    p = cmd.replace("cd", "").strip()
-                    args = [p] if len(p) > 0 else []
-                    self.print(self.cd(args))
-                elif cmd.startswith("pwd"):
-                    self.history.append(self.cache[-1][len(self.prompt_c):])
-                    self.write_history(self.cache[-1][len(self.prompt_c):])
-                    self.print(self.pwd())
-                elif cmd.startswith("rm"):
-                    self.history.append(self.cache[-1][len(self.prompt_c):])
-                    self.write_history(self.cache[-1][len(self.prompt_c):])
-                    p = cmd.replace("rm", "").strip()
-                    args = [p] if len(p) > 0 else []
-                    self.print(self.rm(args))
-                elif cmd.startswith("mkdir"):
-                    self.history.append(self.cache[-1][len(self.prompt_c):])
-                    self.write_history(self.cache[-1][len(self.prompt_c):])
-                    p = cmd.replace("mkdir", "").strip()
-                    args = [p] if len(p) > 0 else []
-                    self.print(self.mkdir(args))
-                elif cmd.startswith("free"):
-                    self.history.append(self.cache[-1][len(self.prompt_c):])
-                    self.write_history(self.cache[-1][len(self.prompt_c):])
-                    self.print(self.free())
-                elif cmd.startswith("ram"):
-                    self.history.append(self.cache[-1][len(self.prompt_c):])
-                    self.write_history(self.cache[-1][len(self.prompt_c):])
-                    self.print(self.ram_switch())
-                elif cmd.startswith("reboot"):
-                    self.history.append(self.cache[-1][len(self.prompt_c):])
-                    self.write_history(self.cache[-1][len(self.prompt_c):])
-                    self.print(self.reboot())
-                elif cmd.startswith("shutdown"):
-                    self.history.append(self.cache[-1][len(self.prompt_c):])
-                    self.write_history(self.cache[-1][len(self.prompt_c):])
-                    self.print(self.shutdown())
-                elif self.run_program_id != None:
-                    self.send_input_hook(self.cache[-1])
-                    self.print("")
-                else:
-                    self.history.append(self.cache[-1][len(self.prompt_c):])
-                    self.write_history(self.cache[-1][len(self.prompt_c):])
-                    try:
-                        lines = ""
-                        tokenlist = self.lexer.tokenize(cmd)
+        try:
+            if c == "\n":
+                cmd = self.cache[-1].strip()
+                if cmd.startswith(self.prompt_c):
+                    cmd = cmd[len(self.prompt_c):]
+                if len(cmd) > 0:
+                    if cmd.lower() == "exit":
+                        self.history.append(self.cache[-1][len(self.prompt_c):])
+                        self.write_history(self.cache[-1][len(self.prompt_c):])
+                        if exists("/main.basic.py"):
+                            uos.rename("/main.py", "/main.shell.py")
+                            uos.rename("/main.basic.py", "/main.py")
+                            machine.soft_reset()
+                        elif exists("/main.shell.py"):
+                            uos.rename("/main.py", "/main.basic.py")
+                            uos.rename("/main.shell.py", "/main.py")
+                            machine.soft_reset()
+                    elif cmd.startswith("ls"):
+                        self.history.append(self.cache[-1][len(self.prompt_c):])
+                        self.write_history(self.cache[-1][len(self.prompt_c):])
+                        ps = cmd.replace("ls", "").strip().split(" ")
+                        args = ps
+                        self.print(self.ls(args))
+                    elif cmd.startswith("cd"):
+                        self.history.append(self.cache[-1][len(self.prompt_c):])
+                        self.write_history(self.cache[-1][len(self.prompt_c):])
+                        p = cmd.replace("cd", "").strip()
+                        args = [p] if len(p) > 0 else []
+                        self.print(self.cd(args))
+                    elif cmd.startswith("pwd"):
+                        self.history.append(self.cache[-1][len(self.prompt_c):])
+                        self.write_history(self.cache[-1][len(self.prompt_c):])
+                        self.print(self.pwd())
+                    elif cmd.startswith("rm"):
+                        self.history.append(self.cache[-1][len(self.prompt_c):])
+                        self.write_history(self.cache[-1][len(self.prompt_c):])
+                        p = cmd.replace("rm", "").strip()
+                        args = [p] if len(p) > 0 else []
+                        self.print(self.rm(args))
+                    elif cmd.startswith("mkdir"):
+                        self.history.append(self.cache[-1][len(self.prompt_c):])
+                        self.write_history(self.cache[-1][len(self.prompt_c):])
+                        p = cmd.replace("mkdir", "").strip()
+                        args = [p] if len(p) > 0 else []
+                        self.print(self.mkdir(args))
+                    elif cmd.startswith("free"):
+                        self.history.append(self.cache[-1][len(self.prompt_c):])
+                        self.write_history(self.cache[-1][len(self.prompt_c):])
+                        self.print(self.free())
+                    elif cmd.startswith("ram"):
+                        self.history.append(self.cache[-1][len(self.prompt_c):])
+                        self.write_history(self.cache[-1][len(self.prompt_c):])
+                        self.print(self.ram_switch())
+                    elif cmd.startswith("reboot"):
+                        self.history.append(self.cache[-1][len(self.prompt_c):])
+                        self.write_history(self.cache[-1][len(self.prompt_c):])
+                        self.print(self.reboot())
+                    elif cmd.startswith("shutdown"):
+                        self.history.append(self.cache[-1][len(self.prompt_c):])
+                        self.write_history(self.cache[-1][len(self.prompt_c):])
+                        self.print(self.shutdown())
+                    elif self.run_program_id != None:
+                        self.send_input_hook(self.cache[-1])
+                        self.print("")
+                    else:
+                        self.history.append(self.cache[-1][len(self.prompt_c):])
+                        self.write_history(self.cache[-1][len(self.prompt_c):])
+                        try:
+                            lines = ""
+                            tokenlist = self.lexer.tokenize(cmd)
 
-                        # Execute commands directly, otherwise
-                        # add program statements to the stored
-                        # BASIC program
+                            # Execute commands directly, otherwise
+                            # add program statements to the stored
+                            # BASIC program
 
-                        if len(tokenlist) > 0:
+                            if len(tokenlist) > 0:
 
-                            # Add a new program statement, beginning
-                            # a line number
-                            if tokenlist[0].category == Token.UNSIGNEDINT\
-                                 and len(tokenlist) > 1:
-                                self.program.add_stmt(tokenlist)
-                                self.print("")
+                                # Add a new program statement, beginning
+                                # a line number
+                                if tokenlist[0].category == Token.UNSIGNEDINT\
+                                     and len(tokenlist) > 1:
+                                    self.program.add_stmt(tokenlist)
+                                    self.print("")
 
-                            # Delete a statement from the program
-                            elif tokenlist[0].category == Token.UNSIGNEDINT \
-                                    and len(tokenlist) == 1:
-                                self.program.delete_statement(int(tokenlist[0].lexeme))
-                                self.print("")
+                                # Delete a statement from the program
+                                elif tokenlist[0].category == Token.UNSIGNEDINT \
+                                        and len(tokenlist) == 1:
+                                    self.program.delete_statement(int(tokenlist[0].lexeme))
+                                    self.print("")
 
-                            # Execute the program
-                            elif tokenlist[0].category == Token.RUN:
-                                self.run_program_id = self.scheduler.add_task(
-                                    Task.get().load(self.program.execute,
-                                         "basic-execute",
-                                         condition = Condition.get(),
-                                         kwargs = {"execute_print": self.execute_print, "shell": self}
+                                # Execute the program
+                                elif tokenlist[0].category == Token.RUN:
+                                    self.run_program_id = self.scheduler.add_task(
+                                        Task.get().load(self.program.execute,
+                                             "basic-execute",
+                                             condition = Condition.get(),
+                                             kwargs = {"execute_print": self.execute_print, "shell": self}
+                                        )
                                     )
-                                )
-                                self.print("")
+                                    self.print("")
 
-                            # List the program
-                            elif tokenlist[0].category == Token.LIST:
-                                 if len(tokenlist) == 2:
-                                     self.program.list(int(tokenlist[1].lexeme),int(tokenlist[1].lexeme))
-                                 elif len(tokenlist) == 3:
-                                     # if we have 3 tokens, it might be LIST x y for a range
-                                     # or LIST -y or list x- for a start to y, or x to end
-                                     if tokenlist[1].lexeme == "-":
-                                         self.program.list(None, int(tokenlist[2].lexeme))
-                                     elif tokenlist[2].lexeme == "-":
-                                         self.program.list(int(tokenlist[1].lexeme), None)
+                                # List the program
+                                elif tokenlist[0].category == Token.LIST:
+                                     if len(tokenlist) == 2:
+                                         self.program.list(int(tokenlist[1].lexeme),int(tokenlist[1].lexeme))
+                                     elif len(tokenlist) == 3:
+                                         # if we have 3 tokens, it might be LIST x y for a range
+                                         # or LIST -y or list x- for a start to y, or x to end
+                                         if tokenlist[1].lexeme == "-":
+                                             self.program.list(None, int(tokenlist[2].lexeme))
+                                         elif tokenlist[2].lexeme == "-":
+                                             self.program.list(int(tokenlist[1].lexeme), None)
+                                         else:
+                                             self.program.list(int(tokenlist[1].lexeme),int(tokenlist[2].lexeme))
+                                     elif len(tokenlist) == 4:
+                                         # if we have 4, assume LIST x-y or some other
+                                         # delimiter for a range
+                                         self.program.list(int(tokenlist[1].lexeme),int(tokenlist[3].lexeme))
                                      else:
-                                         self.program.list(int(tokenlist[1].lexeme),int(tokenlist[2].lexeme))
-                                 elif len(tokenlist) == 4:
-                                     # if we have 4, assume LIST x-y or some other
-                                     # delimiter for a range
-                                     self.program.list(int(tokenlist[1].lexeme),int(tokenlist[3].lexeme))
-                                 else:
-                                     self.program.list()
-                                 self.print("")
+                                         self.program.list()
+                                     self.print("")
 
-                            # Save the program to disk
-                            elif tokenlist[0].category == Token.SAVE:
-                                self.program.save(tokenlist[1].lexeme)
-                                lines += "Program written to file\n"
+                                # Save the program to disk
+                                elif tokenlist[0].category == Token.SAVE:
+                                    self.program.save(tokenlist[1].lexeme)
+                                    lines += "Program written to file\n"
 
-                            # Load the program from disk
-                            elif tokenlist[0].category == Token.LOAD:
-                                self.program.load(tokenlist[1].lexeme)
-                                lines += "Program read from file\n"
+                                # Load the program from disk
+                                elif tokenlist[0].category == Token.LOAD:
+                                    self.program.load(tokenlist[1].lexeme)
+                                    lines += "Program read from file\n"
 
-                            # Delete the program from memory
-                            elif tokenlist[0].category == Token.NEW:
-                                self.program.delete()
-                                self.print("")                                
+                                # Delete the program from memory
+                                elif tokenlist[0].category == Token.NEW:
+                                    self.program.delete()
+                                    self.print("")                                
 
-                            # Unrecognised input
-                            else:
-                                self.print("Unrecognised input", end = "")
-                                for token in tokenlist:
-                                    token.print_lexeme()
-                                self.print("")
-                            if len(lines) > 0:
-                                self.print(lines)
-                    except Exception as e:
-                        self.print(e)
-            else:
-                self.cache.append(self.prompt_c)
-                self.cache_to_frame_history()
-            if len(self.history) > self.history_length:
-                self.history.pop(0)
-            self.history_idx = len(self.history)
-            self.input_counter += 1
-        elif c == "\b":
-            if len(self.cache[-1][:self.current_col]) > len(self.prompt_c):
-                self.cache[-1] = self.cache[-1][:self.current_col-1] + self.cache[-1][self.current_col:]
+                                # Unrecognised input
+                                else:
+                                    self.print("Unrecognised input", end = "")
+                                    for token in tokenlist:
+                                        token.print_lexeme()
+                                    self.print("")
+                                if len(lines) > 0:
+                                    self.print(lines)
+                        except Exception as e:
+                            self.print(e)
+                else:
+                    self.cache.append(self.prompt_c)
+                    self.cache_to_frame_history()
+                if len(self.history) > self.history_length:
+                    self.history.pop(0)
+                self.history_idx = len(self.history)
+                self.input_counter += 1
+            elif c == "\b":
+                if len(self.cache[-1][:self.current_col]) > len(self.prompt_c):
+                    self.cache[-1] = self.cache[-1][:self.current_col-1] + self.cache[-1][self.current_col:]
+                    self.cursor_move_left()
+                    self.input_counter += 1
+            elif c == "BX":
+                self.scroll_up()
+                self.input_counter += 1
+            elif c == "BB":
+                self.scroll_down()
+                self.input_counter += 1
+            elif c == "UP":
+                self.history_previous()
+                self.input_counter += 1
+            elif c == "DN":
+                self.history_next()
+                self.input_counter += 1
+            elif c == "LT":
                 self.cursor_move_left()
                 self.input_counter += 1
-        elif c == "BX":
-            self.scroll_up()
-            self.input_counter += 1
-        elif c == "BB":
-            self.scroll_down()
-            self.input_counter += 1
-        elif c == "UP":
-            self.history_previous()
-            self.input_counter += 1
-        elif c == "DN":
-            self.history_next()
-            self.input_counter += 1
-        elif c == "LT":
-            self.cursor_move_left()
-            self.input_counter += 1
-        elif c == "RT":
-            self.cursor_move_right()
-            self.input_counter += 1
-        elif c == "ES":
-            pass
-        elif c == "Ctrl-C":
-            self.kill_program()
-        elif len(c) == 1:
-            if self.wait_for_input and self.input_start is None:
-                self.input_start = len(self.cache[-1])
-            self.cache[-1] = self.cache[-1][:self.current_col] + c + self.cache[-1][self.current_col:]
-            self.cursor_move_right()
-                
-        if len(self.cache) > self.cache_lines:
-            self.cache.pop(0)
-        self.current_row = len(self.cache)
+            elif c == "RT":
+                self.cursor_move_right()
+                self.input_counter += 1
+            elif c == "ES":
+                pass
+            elif c == "Ctrl-C":
+                self.kill_program()
+            elif len(c) == 1:
+                if self.wait_for_input and self.input_start is None:
+                    self.input_start = len(self.cache[-1])
+                self.cache[-1] = self.cache[-1][:self.current_col] + c + self.cache[-1][self.current_col:]
+                self.cursor_move_right()
+                    
+            if len(self.cache) > self.cache_lines:
+                self.cache.pop(0)
+            self.current_row = len(self.cache)
+        except Exception as e:
+            self.print(str(e))
+            self.print("")
 
     def free(self):
         gc.collect()
