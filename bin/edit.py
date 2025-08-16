@@ -404,8 +404,7 @@ class EditShell(object):
         if self.cursor_row < self.display_offset_row:
             self.display_offset_row = self.cursor_row
         if len(self.cache[self.cursor_row]) < self.offset_col + self.cursor_col:
-            self.cursor_col = len(self.cache[self.cursor_row]) % self.display_width
-            self.offset_col = len(self.cache[self.cursor_row]) - self.cursor_col
+            self.cursor_col = len(self.cache[self.cursor_row]) - self.offset_col
     
     def cursor_move_down(self):
         self.cursor_row += 1
@@ -414,8 +413,7 @@ class EditShell(object):
         if self.cursor_row > self.display_offset_row + self.cache_size - 1:
             self.display_offset_row += 1
         if len(self.cache[self.cursor_row]) < self.offset_col + self.cursor_col:
-            self.cursor_col = len(self.cache[self.cursor_row]) % self.display_width
-            self.offset_col = len(self.cache[self.cursor_row]) - self.cursor_col
+            self.cursor_col = len(self.cache[self.cursor_row]) - self.offset_col
             
     def page_up(self):
         self.display_offset_row -= self.cache_size
@@ -425,8 +423,7 @@ class EditShell(object):
         if self.cursor_row < 0:
             self.cursor_row = 0
         if len(self.cache[self.cursor_row]) < self.offset_col + self.cursor_col:
-            self.cursor_col = len(self.cache[self.cursor_row]) % self.display_width
-            self.offset_col = len(self.cache[self.cursor_row]) - self.cursor_col
+            self.cursor_col = len(self.cache[self.cursor_row]) - self.offset_col
     
     def page_down(self):
         self.display_offset_row += self.cache_size
@@ -436,24 +433,27 @@ class EditShell(object):
         if self.display_offset_row > len(self.cache) - self.cache_size:
             self.display_offset_row = len(self.cache) - self.cache_size
         if len(self.cache[self.cursor_row]) < self.offset_col + self.cursor_col:
-            self.cursor_col = len(self.cache[self.cursor_row]) % self.display_width
-            self.offset_col = len(self.cache[self.cursor_row]) - self.cursor_col
+            self.cursor_col = len(self.cache[self.cursor_row]) - self.offset_col
     
     def cursor_move_left(self):
-        self.cursor_col -= 1
-        if self.cursor_col < 0:
-            self.cursor_col = 0
-            if self.offset_col > 0:
-                self.offset_col -= 1
-                self.cache_to_frame()
-            else:
-                if self.cursor_row > 0:
-                    self.cursor_row -= 1
-                    self.cursor_col = len(self.cache[self.cursor_row]) % self.display_width
-                    self.offset_col = len(self.cache[self.cursor_row]) - self.cursor_col
+        self.cursor_col -= 1            
+        if len(self.cache[self.cursor_row]) >= self.offset_col:
+            if self.cursor_col < 0:
+                self.cursor_col = 0
+                if self.offset_col > 0:
+                    self.offset_col -= 1
+                    self.cache_to_frame()
                 else:
-                    self.cursor_col = 0
-                    self.offset_col = 0
+                    if self.cursor_row > 0:
+                        self.cursor_row -= 1
+                        self.cursor_col = len(self.cache[self.cursor_row]) % self.display_width
+                        self.offset_col = len(self.cache[self.cursor_row]) - self.cursor_col
+                    else:
+                        self.cursor_col = 0
+                        self.offset_col = 0
+        else:
+            if self.cursor_col + self.offset_col <= 0:
+                self.cursor_col = -self.offset_col
         if self.cursor_row < self.display_offset_row:
             self.display_offset_row = self.cursor_row
         
@@ -474,18 +474,20 @@ class EditShell(object):
             self.display_offset_row += 1
             
     def page_left(self):
-        if self.offset_col >= self.display_width:
-            self.offset_col -= self.display_width
+        if self.offset_col > 0:
+            self.offset_col -= self.display_width // 4
+            self.cursor_col += self.display_width // 4
             if self.offset_col < 0:
                 self.offset_col = 0
             self.cache_to_frame()
+        elif self.offset_col == 0:
+            self.cursor_col = 0
     
     def page_right(self):
-        if len(self.cache[self.cursor_row]) >= self.offset_col + self.display_width:
-            self.offset_col += self.display_width
-            if len(self.cache[self.cursor_row]) < self.cursor_col + self.offset_col:
-                self.cursor_col = len(self.cache[self.cursor_row]) - self.offset_col
-            self.cache_to_frame()
+        self.offset_col += self.display_width // 4
+        if len(self.cache[self.cursor_row]) < self.cursor_col + self.offset_col:
+            self.cursor_col = len(self.cache[self.cursor_row]) - self.offset_col
+        self.cache_to_frame()
 
     def undo(self):
         if len(self.edit_history) > 0:
