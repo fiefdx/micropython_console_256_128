@@ -216,8 +216,8 @@ class BasicShell(object):
                 elif cmd.startswith("ls"):
                     self.history.append(self.cache[-1][len(self.prompt_c):])
                     self.write_history(self.cache[-1][len(self.prompt_c):])
-                    p = cmd.replace("ls", "").strip()
-                    args = [p] if len(p) > 0 else []
+                    ps = cmd.replace("ls", "").strip().split(" ")
+                    args = ps
                     self.print(self.ls(args))
                 elif cmd.startswith("cd"):
                     self.history.append(self.cache[-1][len(self.prompt_c):])
@@ -414,21 +414,55 @@ class BasicShell(object):
 
     def ls(self, args = []):
         files = []
-        dirs = []
+        files_total = 0
+        dirs_total = 0
         path = uos.getcwd()
+        page_size = 16
+        page_num = 1
         if len(args) > 0:
             path = args[0]
+        if len(args) > 1:
+            page_num = int(args[1])
         if len(path) > 1 and path.endswith("/"):
             path = path[:-1]
-        fs = uos.listdir(path)
+        fs = uos.ilistdir(path)
         for f in fs:
-            p = path_join(path, f)
-            s = uos.stat(p)
-            if s[0] == 16384:
-                dirs.append("D:" + f)
-            elif s[0] == 32768:
-                files.append("F:" + f)
-        result = "\n".join(dirs) + "\n" + "\n".join(files)
+            if f[1] == 16384:
+                dirs_total += 1
+            elif f[1] == 32768:
+                files_total += 1
+        start = (page_num - 1) * page_size
+        end = page_num * page_size
+        stop = False
+        n = 0
+        fs = uos.ilistdir(path)
+        for f in fs:
+            if f[1] == 16384:
+                n += 1
+                if n >= start and n <= end:
+                    files.append("D:" + f[0])
+                if n >= end:
+                    stop = True
+                    break
+        if not stop:
+            fs = uos.ilistdir(path)
+            for f in fs:
+                if f[1] == 32768:
+                    n += 1
+                    if n >= start and n <= end:
+                        files.append("F:" + f[0])
+                    if n >= end:
+                        break
+        files.append("Total-%s|Dirs-%s|Files-%s|%s-%s:%s/%s" % (
+            dirs_total + files_total,
+            dirs_total,
+            files_total,
+            start + 1,
+            end,
+            page_num,
+            ceil((dirs_total + files_total) / page_size))
+        )
+        result = "\n".join(files)
         return result
 
     def pwd(self):
