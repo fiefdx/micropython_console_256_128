@@ -38,6 +38,8 @@ class PyShell(Shell):
         self.current_shell = None
         self.enable_cursor = True
         self.history_file_path = history_file_path
+        self.stats = ""
+        self.loading = True
         self.load_history()
         self.clear()
         #Shell.__init__(self, display_size = display_size, cache_size = cache_size, history_length = history_length, prompt_c = prompt_c, scheduler = scheduler, display_id = display_id, storage_id = storage_id)
@@ -122,7 +124,7 @@ class PyShell(Shell):
             self.cursor_move_right()
         elif c == "ES":
             pass
-        else:
+        elif len(c) == 1:
             self.cache[-1] = self.cache[-1][:self.current_col] + c + self.cache[-1][self.current_col:]
             self.cursor_move_right()
                 
@@ -144,6 +146,21 @@ class PyShell(Shell):
         self.current_row = len(self.cache) - 1
         self.current_col = len(self.cache[-1])
 
+    def update_stats(self, d):
+        self.stats = "C%3d%% R%3d%%(%.2fK|%.2fK)" % (d[1], d[2], d[3] / 1024, d[4] / 1024)
+
+    def get_display_frame(self, c = None):
+        data = {}
+        frame = self.cache_to_frame()[-self.display_height:]
+        frame.append(self.stats)
+        data["frame"] = frame
+        data["cursor"] = self.get_cursor_position(c)
+        if self.loading:
+            data["render"] = (("borders", "rects"),)
+            data["borders"] = [[0, 0, 256, 127, 1], [0, 119, 256, 8, 1]]
+            self.loading = False
+        return data
+
 
 def main(*args, **kwargs):
     task = args[0]
@@ -158,7 +175,7 @@ def main(*args, **kwargs):
             if exists(file_path):
                 with open(file_path, "r") as fp:
                     content = fp.read()
-                    s = PyShell(display_size = (39, 18))
+                    s = PyShell(display_size = (39, 17))
                     result = s.exec_script(content, args = kwargs["args"][1:])
                 shell.disable_output = False
                 shell.current_shell = None
@@ -168,34 +185,40 @@ def main(*args, **kwargs):
             else:
                 raise Exception("file[%s] not exists!" % file_path)
         else:
-            s = PyShell(display_size = (39, 18))
+            s = PyShell(display_size = (39, 17))
             shell.current_shell = s
             s.write_line("             Welcome to Python")
             s.write_char("\n")
-            yield Condition.get().load(sleep = 0, wait_msg = True, send_msgs = [
-                Message.get().load({"frame": s.get_display_frame(), "cursor": s.get_cursor_position(1)}, receiver = shell_id)
+            yield Condition.get().load(sleep = 0, wait_msg = False, send_msgs = [
+                Message.get().load(s.get_display_frame(), receiver = shell_id)
             ])
+            c = ""
             msg = task.get_message()
-            c = msg.content["msg"]
-            msg.release()
-            while c != "" and not s.exit:
+            if msg:
+                c = msg.content["msg"]
+                msg.release()
+            while not s.exit:
                 #print("char:", c)
                 s.input_char(c)
                 if not s.exit:
-                    yield Condition.get().load(sleep = 0, wait_msg = True, send_msgs = [
-                        Message.get().load({"frame": s.get_display_frame(), "cursor": s.get_cursor_position(1)}, receiver = shell_id)
+                    yield Condition.get().load(sleep = 50, wait_msg = False, send_msgs = [
+                        Message.get().load(s.get_display_frame(1 if c != "" else None), receiver = shell_id)
                     ])
+                    c = ""
                     msg = task.get_message()
-                    c = msg.content["msg"]
-                    msg.release()
+                    if msg:
+                        c = msg.content["msg"]
+                        msg.release()
             shell.disable_output = False
             shell.current_shell = None
+            shell.loading = True
             yield Condition.get().load(sleep = 0, wait_msg = False, send_msgs = [
                 Message.get().load({"output": "quit from python"}, receiver = shell_id)
             ])
     except Exception as e:
         shell.disable_output = False
         shell.current_shell = None
+        shell.loading = True
         yield Condition.get().load(sleep = 0, send_msgs = [
             Message.get().load({"output": str(e)}, receiver = shell_id)
         ])

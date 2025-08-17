@@ -221,6 +221,8 @@ class Shell(object):
 
     def update_stats(self, d):
         self.stats = "C%3d%% R%3d%%(%.2fK|%.2fK)" % (d[1], d[2], d[3] / 1024, d[4] / 1024)
+        if self.current_shell:
+            self.current_shell.update_stats(d)
     
     def input_char(self, c):
         try:
