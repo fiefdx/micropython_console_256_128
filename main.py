@@ -64,10 +64,14 @@ def monitor(task, name, scheduler = None, display_id = None):
         # print(monitor_msg)
         # print(Message.remain(), Condition.remain(), Task.remain())
         # yield Condition.get().load(sleep = 1000)
+        stat = os.statvfs("/")
+        size = stat[1] * stat[2]
+        free = stat[0] * stat[3]
+        used = size - free
         yield Condition.get().load(
             sleep = 1000,
             send_msgs = [Message.get().load(
-                {"stats": (scheduler.cpu, int(100 - scheduler.idle), 100.0 - (ram_free * 100 / (264 * 1024)), ram_free, ram_used)},
+                {"stats": (scheduler.cpu, int(100 - scheduler.idle), 100.0 - (ram_free * 100 / (264 * 1024)), ram_free, ram_used, size, free, used)},
                 receiver = scheduler.shell_id
             )]
         )
