@@ -147,7 +147,7 @@ class PyShell(Shell):
         self.current_col = len(self.cache[-1])
 
     def update_stats(self, d):
-        self.stats = "C%3d%% R%3d%%(%.2fK|%.2fK)" % (d[1], d[2], d[3] / 1024, d[4] / 1024)
+        self.stats = "C%3d%% R%3d%%|%.2fK|%.2fK D %3dK|%3dK" % (d[1], d[2], d[3] / 1024, d[4] / 1024, d[6] / 1024, d[7] / 1024)
 
     def get_display_frame(self, c = None):
         data = {}

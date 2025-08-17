@@ -34,7 +34,7 @@ class Chat(object):
                 return True, result
             else:
                 response = r.json()
-                self.context.append(response["message"])
+                self.context.append({"role": response["message"]["role"], "content": response["message"]["content"]})
                 if len(self.context) > self.context_length:
                     self.context.pop(0)
                 return True, response["message"]["content"]
