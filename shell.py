@@ -221,7 +221,7 @@ class Shell(object):
 
     def update_stats(self, d):
         self.stats = "C%3d%% R%3d%%|%.2fK|%.2fK D %3dK|%3dK" % (d[1], d[2], d[3] / 1024, d[4] / 1024, d[6] / 1024, d[7] / 1024)
-        if self.current_shell:
+        if hasattr(self.current_shell, "update_stats"):
             self.current_shell.update_stats(d)
     
     def input_char(self, c):
