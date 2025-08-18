@@ -12,16 +12,16 @@ class Chat(object):
         self.timeout = timeout
         self.stream = stream
         self.context_length = context_length
-        self.url = "http://%s:%s/api/chat" % (host, port)
         self.context = []
         self.headers = {"Content-Type": "application/json"}
 
     def chat(self, message):
+        url = "http://%s:%s/api/chat" % (self.host, self.port)
         self.context.append({"role": "user", "content": message})
         if len(self.context) > self.context_length:
             self.context.pop(0)
         data = {"model": self.model, "messages": self.context, "stream": self.stream}
-        r = requests.post(self.url, data = json.dumps(data), headers = self.headers, stream = self.stream, timeout = self.timeout)
+        r = requests.post(url, data = json.dumps(data), headers = self.headers, stream = self.stream, timeout = self.timeout)
         if r.status_code == 200:
             if self.stream:
                 result = b""
