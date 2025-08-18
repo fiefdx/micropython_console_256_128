@@ -21,9 +21,7 @@ class Chat(object):
         if len(self.context) > self.context_length:
             self.context.pop(0)
         data = {"model": self.model, "messages": self.context, "stream": self.stream}
-        print(data)
-        r = requests.post(self.url, data = json.dumps(data), headers = self.headers, stream = self.stream)
-        print(dir(r.raw))
+        r = requests.post(self.url, data = json.dumps(data), headers = self.headers, stream = self.stream, timeout = self.timeout)
         if r.status_code == 200:
             if self.stream:
                 result = b""
