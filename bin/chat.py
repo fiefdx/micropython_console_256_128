@@ -7,7 +7,7 @@ from io import StringIO
 from shell import Shell
 from scheduler import Condition, Message
 from ollama import Chat
-from common import exists, path_join, isfile, isdir, path_split
+from common import exists, path_join, isfile, isdir, mkdirs, path_split
 
 coroutine = True
 
@@ -42,6 +42,7 @@ class ChatShell(Shell):
         self.stats = ""
         self.loading = True
         self.chat = Chat(host = host, port = port, model = model, stream = stream)
+        self.chat_log = None
         self.load_history()
         # self.clear()
         
@@ -58,9 +59,20 @@ class ChatShell(Shell):
                     self.write_history(self.cache[-1][len(self.prompt_c):])
                     if cmd == "exit" or cmd == "quit":
                         self.exit = True
-                    elif cmd == "clear":
+                    elif cmd == "new":
+                        if self.chat_log is not None:
+                            self.chat_log.close()
+                        self.chat_log = None
                         self.chat.clear()
                         self.write_lines("new chat", end = True)
+                    elif cmd.startswith("new:"):
+                        if self.chat_log is not None:
+                            self.chat_log.close()
+                        name = ":".join(cmd.split(":")[1:]).strip()
+                        if not exists("/sd/chat_log"):
+                            mkdirs("/sd/chat_log")
+                        self.chat_log = open(path_join("/sd/chat_log", name), "a")
+                        self.write_lines("new chat to %s" % name, end = True)
                     elif cmd == "info":
                         message = "host: %s\nport: %s\nmodel: %s\nctx: %s\n" % (self.chat.host, self.chat.port, self.chat.model, self.chat.context_length)
                         self.write_lines(message, end = True)
@@ -80,6 +92,10 @@ class ChatShell(Shell):
                         try:
                             success, content = self.chat.chat(cmd)
                             if success:
+                                if self.chat_log:
+                                    self.chat_log.write(cmd + "\n")
+                                    self.chat_log.write(content + "\n\n")
+                                    self.chat_log.flush()
                                 self.write_lines(content + "\n", end = True)
                             else:
                                 self.write_lines("fail reason: %s" % content.decode(), end = True)
