@@ -9,6 +9,7 @@ from io import StringIO
 from listfile import ListFile
 from shell import Shell
 from scheduler import Condition, Message
+from ollama import Chat
 from common import exists, path_join, isfile, isdir, ClipBoard
 
 coroutine = True
@@ -45,6 +46,7 @@ class EditShell(object):
         self.select_start_row = 0
         self.select_start_col = 0
         self.exit_count = 0
+        self.chat = Chat(host = "", port = 11434, model = "llama3.2:1b")
         
     def input_char(self, c):
         if self.mode == "edit":
@@ -131,6 +133,8 @@ class EditShell(object):
                 self.select_start_col = self.cursor_col + self.offset_col
             elif c == "Ctrl-V":
                 self.paste()
+            elif c == "Ctrl-G":
+                self.generate_with_chat()
             elif c == "ES":
                 if self.status == "saved":
                     self.exit = True
@@ -397,6 +401,34 @@ class EditShell(object):
                 lines.append(line)
         return lines
             
+    def generate_with_chat(self):
+        question = self.cache[self.cursor_row]
+        for i in range(4):
+            cmd = self.cache[i]
+            if cmd.startswith("set model:"):
+                self.chat.model = ":".join(cmd.split(":")[1:]).strip()
+            elif cmd.startswith("set ctx:"):
+                self.chat.context_length = int(cmd.split(":")[-1].strip())
+            elif cmd.startswith("set host:"):
+                self.chat.host = cmd.split(":")[-1].strip()
+            elif cmd.startswith("set port:"):
+                self.chat.port = cmd.split(":")[-1].strip()
+        try:
+            success, answer = self.chat.chat(question)
+            if success:
+                self.cache.insert(self.cursor_row + 1, ">>>")
+                self.cache.insert(self.cursor_row + 2, "<<<")
+                lines = answer.split("\n")
+                for i in range(len(lines)):
+                    line = lines[-i - 1]
+                    if line.endswith("\n"):
+                        line = line[:-1]
+                    self.cache.insert(self.cursor_row + 2, line)
+            else:
+                self.cache.insert(self.cursor_row + 1, "fail reason: %s" % content.decode())
+        except Exception as e:
+            self.cache.insert(self.cursor_row + 1, str(e))
+
     def cursor_move_up(self):
         self.cursor_row -= 1
         if self.cursor_row < 0:
