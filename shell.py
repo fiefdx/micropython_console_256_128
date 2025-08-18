@@ -359,11 +359,11 @@ class Shell(object):
         #print("current_col: ", self.current_col)
         
     def scroll_up(self):
-        self.scroll_row -= 18
+        self.scroll_row -= self.display_height
         #print("scroll_row:", self.scroll_row)
         
     def scroll_down(self):
-        self.scroll_row += 18
+        self.scroll_row += self.display_height
         if self.scroll_row >= 0:
             self.scroll_row = 0
         #print("scroll_row:", self.scroll_row)

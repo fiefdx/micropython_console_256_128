@@ -115,4 +115,7 @@ del _mvi
 del ifb
 
 def get_ch(ch):
-    return chars[ch]
+    if ch in chars:
+        return chars[ch]
+    else:
+        return "*"

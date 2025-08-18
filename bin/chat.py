@@ -65,7 +65,7 @@ class ChatShell(Shell):
                         message = "host: %s\nport: %s\nmodel: %s\nctx: %s\n" % (self.chat.host, self.chat.port, self.chat.model, self.chat.context_length)
                         self.write_lines(message, end = True)
                     elif cmd.startswith("set model:"):
-                        self.chat.model = cmd.split(":")[-1].strip()
+                        self.chat.model = ":".join(cmd.split(":")[1:]).strip()
                         self.write_lines("model: %s" % self.chat.model, end = True)
                     elif cmd.startswith("set ctx:"):
                         self.chat.context_length = int(cmd.split(":")[-1].strip())
@@ -80,7 +80,7 @@ class ChatShell(Shell):
                         try:
                             success, content = self.chat.chat(cmd)
                             if success:
-                                self.write_lines(content, end = True)
+                                self.write_lines(content + "\n", end = True)
                             else:
                                 self.write_lines("fail reason: %s" % content.decode(), end = True)
                         except Exception as e:
@@ -166,7 +166,7 @@ def main(*args, **kwargs):
             port = kwargs["args"][1]
         if len(kwargs["args"]) > 2:
             stream = True if int(kwargs["args"][2]) == 1 else False
-        s = ChatShell(display_size = (39, 17), host = host, port = port, model = model, stream = stream)
+        s = ChatShell(display_size = (41, 17), host = host, port = port, model = model, stream = stream)
         shell.current_shell = s
         s.write_line("              Welcome to Chat")
         s.write_char("\n")
