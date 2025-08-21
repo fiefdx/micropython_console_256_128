@@ -3,6 +3,7 @@ import sys
 import gc
 import time
 import uos
+import socket
 machine = None
 microcontroller = None
 try:
@@ -575,7 +576,48 @@ def keyboard_input(task, name, scheduler = None, interval = 50, shell_id = None,
                 keyboard_mode = k.mode
                 yield Condition.get().load(sleep = 0, send_msgs = [Message.get().load({"keyboard_mode": keyboard_mode}, receiver = shell_id)])
             k.clear()
-        
+
+
+def remote_input(task, name, scheduler = None, interval = 50, shell_id = None, display_id = None):
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind(('0.0.0.0', 8888))
+    s.listen(1)
+    s.setblocking(False)
+    conn = None
+    disable = False
+    while True:
+        if disable:
+            yield Condition.get().load(sleep = 1000)
+        else:
+            yield Condition.get().load(sleep = interval)
+            try:
+                if conn is None:
+                    conn, addr = s.accept()
+                    #print(dir(conn))
+                    #print('connect form', addr)
+                    conn.setblocking(False)
+                else:
+                    key = conn.recv(2).decode()
+                    if not key:
+                        conn.close()
+                        conn = None
+                    elif key != "":
+                        if key not in ("ES", "UP", "DN", "LT", "RT", "BX", "BB", "BY", "BA") and len(key) > 1:
+                            for k in key:
+                                # print("key: ", k)
+                                if scheduler.shell and scheduler.shell.session_task_id and scheduler.exists_task(scheduler.shell.session_task_id):
+                                    yield Condition.get().load(sleep = 0, send_msgs = [Message.get().load({"msg": k, "keys": []}, receiver = scheduler.shell.session_task_id)])
+                                else:
+                                    yield Condition.get().load(sleep = 0, send_msgs = [Message.get().load({"char": k}, receiver = shell_id)])
+                        else:
+                            # print("key: ", key)
+                            if scheduler.shell and scheduler.shell.session_task_id and scheduler.exists_task(scheduler.shell.session_task_id):
+                                yield Condition.get().load(sleep = 0, send_msgs = [Message.get().load({"msg": key, "keys": []}, receiver = scheduler.shell.session_task_id)])
+                            else:
+                                yield Condition.get().load(sleep = 0, send_msgs = [Message.get().load({"char": key}, receiver = shell_id)])
+            except OSError as e:
+                pass
+
         
 def sound_output(task, name, scheduler = None, sound_pwm = None):
     while True:
@@ -620,6 +662,7 @@ if __name__ == "__main__":
         #counter_id = s.add_task(Task(counter, "counter", kwargs = {"interval": 10, "display_id": display_id}))
         #backlight_id = s.add_task(Task(display_backlight, "display_backlight", kwargs = {"interval": 500, "display_id": display_id}))
         #keyboard_id = s.add_task(Task(test_keyboard, "test_keyboard", kwargs = {"interval": 50, "display_id": display_id}))
+        remote_id = s.add_task(Task.get().load(remote_input, "remote_input", condition = Condition.get(), kwargs = {"scheduler": s, "interval": 10, "shell_id": shell_id, "display_id": display_id}))
         # led.on()
         led.off()
         s.run()
