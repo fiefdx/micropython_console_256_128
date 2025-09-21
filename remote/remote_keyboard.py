@@ -71,7 +71,7 @@ class UserInterface(object):
         self.host = host
         self.port = port
         self.work_thread = work_thread
-        self.font_command = pygame.font.SysFont('Arial', 80)
+        self.font_command = pygame.font.SysFont('Arial', 70)
         self.font = pygame.font.SysFont('Arial', 20)
         self.chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ`1234567890-=[]\\;',./~!@#$%^&*()_+{}|:\"<>? \b\n"
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -187,7 +187,7 @@ class UserInterface(object):
                         elif "z" >= self.key >= "a" or "Z" >= self.key >= "A":
                             self.key = "Ctrl-" + self.key.upper()
                     self.s.sendall(self.key.encode())
-                    self.input += self.key
+                    self.input += self.key if self.key != "\b" else " "
                     if self.key in self.chars:
                         self.key_pressed = self.key
                         self.key_pressed_counter = 0
@@ -210,7 +210,7 @@ class UserInterface(object):
                 self.key_pressed_counter = 0
                 if self.key_pressed is not None:
                     self.s.sendall(self.key_pressed.encode())
-                    self.input += self.key_pressed
+                    self.input += self.key if self.key != "\b" else " "
                     if len(self.input) >= self.input_max_length:
                         self.input = self.input[-self.input_max_length:]
                     print(self.key_pressed)
@@ -219,7 +219,7 @@ class UserInterface(object):
                 self.key_pressed_counter = 0
                 if self.key_pressed is not None:
                     self.s.sendall(self.key_pressed.encode())
-                    self.input += self.key_pressed
+                    self.input += self.key if self.key != "\b" else " "
                     if len(self.input) >= self.input_max_length:
                         self.input = self.input[-self.input_max_length:]
                     print(self.key_pressed)
