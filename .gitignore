@@ -13,3 +13,6 @@ main.basic.loop.py
 mem_bench.py
 mem_bench_pybasic.py
 program_loop.py
+__pycache__
+logs
+*.log
