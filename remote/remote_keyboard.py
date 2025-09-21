@@ -73,7 +73,7 @@ class UserInterface(object):
         self.work_thread = work_thread
         self.font_command = pygame.font.SysFont('Arial', 80)
         self.font = pygame.font.SysFont('Arial', 20)
-        self.chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ`1234567890-=[]\\;',./~!@#$%^&*()_+{}|:\"<>? "
+        self.chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ`1234567890-=[]\\;',./~!@#$%^&*()_+{}|:\"<>? \b\n"
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.s.connect((self.host, self.port))
         self.input = ""
@@ -181,10 +181,16 @@ class UserInterface(object):
                         self.key = self.keys[event.key][1]
                     elif event.mod & pygame.KMOD_SHIFT:
                         self.key = self.keys[event.key][1]
+                    elif event.mod & pygame.KMOD_CTRL:
+                        if self.key == "s" or self.key == "S":
+                            self.key = "SAVE"
+                        elif "z" >= self.key >= "a" or "Z" >= self.key >= "A":
+                            self.key = "Ctrl-" + self.key.upper()
                     self.s.sendall(self.key.encode())
                     self.input += self.key
-                    self.key_pressed = self.key
-                    self.key_pressed_counter = 0
+                    if self.key in self.chars:
+                        self.key_pressed = self.key
+                        self.key_pressed_counter = 0
                     if len(self.input) >= self.input_max_length:
                         self.input = self.input[-self.input_max_length:]
                     print(self.key)

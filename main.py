@@ -597,12 +597,12 @@ def remote_input(task, name, scheduler = None, interval = 50, shell_id = None, d
                     #print('connect form', addr)
                     conn.setblocking(False)
                 else:
-                    key = conn.recv(2).decode()
+                    key = conn.recv(6).decode()
                     if not key:
                         conn.close()
                         conn = None
                     elif key != "":
-                        if key not in ("ES", "UP", "DN", "LT", "RT", "BX", "BB", "BY", "BA") and len(key) > 1:
+                        if (key not in ("ES", "UP", "DN", "LT", "RT", "BX", "BB", "BY", "BA", "SAVE", "SUP", "SDN") and not key.startswith("Ctrl-")) and len(key) > 1:
                             for k in key:
                                 # print("key: ", k)
                                 if scheduler.shell and scheduler.shell.session_task_id and scheduler.exists_task(scheduler.shell.session_task_id):
