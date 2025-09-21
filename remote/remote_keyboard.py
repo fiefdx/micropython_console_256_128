@@ -64,7 +64,7 @@ class UserInterface(object):
     def __init__(self, host, port, work_thread, task_queue, result_queue):
         pygame.init()
         pygame.mixer.init()
-        self.window = pygame.display.set_mode((512, 512)) # pygame.FULLSCREEN | pygame.SCALED) # , pygame.RESIZABLE)
+        self.window = pygame.display.set_mode((512, 128)) # pygame.FULLSCREEN | pygame.SCALED) # , pygame.RESIZABLE)
         pygame.display.set_caption("RemoteKeyboard - v%s" % __version__)
         pygame.display.set_icon(pygame.image.load("icon.png"))
 
@@ -138,8 +138,10 @@ class UserInterface(object):
             pygame.K_PAGEUP: ("SUP", "SUP"),
             pygame.K_PAGEDOWN: ("SDN", "SDN"),
         }
-        self.key_pressed = ""
-        self.key_pressed_interval = 10
+        self.key_pressed = None
+        self.key_pressed_status = False
+        self.key_pressed_interval = 5
+        self.key_pressed_trigger = 10
         self.key_pressed_counter = 0
 
         self.clock = pygame.time.Clock()
@@ -151,13 +153,29 @@ class UserInterface(object):
         self.work_thread.stop()
         self.running = False
 
+    def process_key(self, event):
+        self.key = self.keys[event.key][0]
+        if event.mod & pygame.KMOD_CAPS:
+            self.key = self.keys[event.key][1]
+        elif event.mod & pygame.KMOD_SHIFT:
+            self.key = self.keys[event.key][1]
+        self.s.sendall(self.key.encode())
+        self.input += self.key
+        self.key_pressed = event.key
+        self.key_pressed_counter = 0
+        if len(self.input) >= self.input_max_length:
+            self.input = self.input[-self.input_max_length:]
+        print(self.key)
+
     def process_input(self):
+        self.key_pressed_counter += 1
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.quit()
                 break
             elif event.type == pygame.KEYDOWN:
                 if event.key in self.keys:
+                    # self.process_key(event)
                     self.key = self.keys[event.key][0]
                     if event.mod & pygame.KMOD_CAPS:
                         self.key = self.keys[event.key][1]
@@ -165,28 +183,40 @@ class UserInterface(object):
                         self.key = self.keys[event.key][1]
                     self.s.sendall(self.key.encode())
                     self.input += self.key
+                    self.key_pressed = self.key
+                    self.key_pressed_counter = 0
                     if len(self.input) >= self.input_max_length:
                         self.input = self.input[-self.input_max_length:]
                     print(self.key)
-                # if event.key == pygame.K_ESCAPE:
-                #     self.quit()
-                # elif event.key == pygame.K_RETURN:
-                #     self.key = "\n"
-                #     print("enter")
-                # elif event.key == pygame.K_LEFT:
-                #     pass
-                # elif event.key == pygame.K_RIGHT:
-                #     pass
-                # elif event.key == pygame.K_UP:
-                #     pass
-                # elif event.key == pygame.K_DOWN:
-                #     pass
-                # elif event.key == pygame.K_f:
-                #     self.key = "f"
-                #     if event.mod & pygame.KMOD_CAPS:
-                #         self.key = "F"
-                #     if event.mod & pygame.KMOD_SHIFT:
-                #         self.key = "F"
+            elif event.type == pygame.KEYUP:
+                if event.key in self.keys:
+                    self.key = self.keys[event.key][0]
+                    if event.mod & pygame.KMOD_CAPS:
+                        self.key = self.keys[event.key][1]
+                    elif event.mod & pygame.KMOD_SHIFT:
+                        self.key = self.keys[event.key][1]
+                    if self.key == self.key_pressed:
+                        self.key_pressed = None
+                        self.key_pressed_status = False
+        if not self.key_pressed_status:
+            if self.key_pressed_counter >= self.key_pressed_trigger:
+                self.key_pressed_status = True
+                self.key_pressed_counter = 0
+                if self.key_pressed is not None:
+                    self.s.sendall(self.key_pressed.encode())
+                    self.input += self.key_pressed
+                    if len(self.input) >= self.input_max_length:
+                        self.input = self.input[-self.input_max_length:]
+                    print(self.key_pressed)
+        else:
+            if self.key_pressed_counter >= self.key_pressed_interval:
+                self.key_pressed_counter = 0
+                if self.key_pressed is not None:
+                    self.s.sendall(self.key_pressed.encode())
+                    self.input += self.key_pressed
+                    if len(self.input) >= self.input_max_length:
+                        self.input = self.input[-self.input_max_length:]
+                    print(self.key_pressed)
 
     def render(self):
         red = (180, 53, 53)
