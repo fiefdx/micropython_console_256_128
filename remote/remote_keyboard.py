@@ -1,5 +1,6 @@
 import os
 import sys
+import socket
 import traceback
 import logging
 import math
@@ -60,22 +61,93 @@ class WorkThread(StoppableThread):
 
 
 class UserInterface(object):
-    def __init__(self, work_thread, task_queue, result_queue):
+    def __init__(self, host, port, work_thread, task_queue, result_queue):
         pygame.init()
         pygame.mixer.init()
         self.window = pygame.display.set_mode((512, 512)) # pygame.FULLSCREEN | pygame.SCALED) # , pygame.RESIZABLE)
         pygame.display.set_caption("RemoteKeyboard - v%s" % __version__)
-        # pygame.display.set_icon(pygame.image.load("assets/icon.png"))
+        pygame.display.set_icon(pygame.image.load("icon.png"))
 
+        self.host = host
+        self.port = port
         self.work_thread = work_thread
         self.font_command = pygame.font.SysFont('Arial', 80)
         self.font = pygame.font.SysFont('Arial', 20)
+        self.chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ`1234567890-=[]\\;',./~!@#$%^&*()_+{}|:\"<>? "
+        self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.s.connect((self.host, self.port))
+        self.input = ""
+        self.input_max_length = 10
+
+        self.keys = {
+            pygame.K_ESCAPE: ("ES", "ES"),
+            pygame.K_RETURN: ("\n", "\n"),
+            pygame.K_SPACE: (" ", " "),
+            pygame.K_BACKSPACE: ("\b", "\b"),
+            pygame.K_a: ("a", "A"),
+            pygame.K_b: ("b", "B"),
+            pygame.K_c: ("c", "C"),
+            pygame.K_d: ("d", "D"),
+            pygame.K_e: ("e", "E"),
+            pygame.K_f: ("f", "F"),
+            pygame.K_g: ("g", "G"),
+            pygame.K_h: ("h", "H"),
+            pygame.K_i: ("i", "I"),
+            pygame.K_j: ("j", "J"),
+            pygame.K_k: ("k", "K"),
+            pygame.K_l: ("l", "L"),
+            pygame.K_m: ("m", "M"),
+            pygame.K_n: ("n", "N"),
+            pygame.K_o: ("o", "O"),
+            pygame.K_p: ("p", "P"),
+            pygame.K_q: ("q", "Q"),
+            pygame.K_r: ("r", "R"),
+            pygame.K_s: ("s", "S"),
+            pygame.K_t: ("t", "T"),
+            pygame.K_u: ("u", "U"),
+            pygame.K_v: ("v", "V"),
+            pygame.K_w: ("w", "W"),
+            pygame.K_x: ("x", "X"),
+            pygame.K_y: ("y", "Y"),
+            pygame.K_z: ("z", "Z"),
+            pygame.K_BACKQUOTE: ("`", "~"),
+            pygame.K_1: ("1", "!"),
+            pygame.K_2: ("2", "@"),
+            pygame.K_3: ("3", "#"),
+            pygame.K_4: ("4", "$"),
+            pygame.K_5: ("5", "%"),
+            pygame.K_6: ("6", "^"),
+            pygame.K_7: ("7", "&"),
+            pygame.K_8: ("8", "*"),
+            pygame.K_9: ("9", "("),
+            pygame.K_0: ("0", ")"),
+            pygame.K_MINUS: ("-", "_"),
+            pygame.K_EQUALS: ("=", "+"),
+            pygame.K_LEFTBRACKET: ("[", "{"),
+            pygame.K_RIGHTBRACKET: ("]", "}"),
+            pygame.K_BACKSLASH: ("\\", "|"),
+            pygame.K_SEMICOLON: (";", ":"),
+            pygame.K_QUOTE: ("'", "\""),
+            pygame.K_COMMA: (",", "<"),
+            pygame.K_PERIOD: (".", ">"),
+            pygame.K_SLASH: ("/", "?"),
+            pygame.K_UP: ("UP", "UP"),
+            pygame.K_DOWN: ("DN", "DN"),
+            pygame.K_LEFT: ("LT", "LT"),
+            pygame.K_RIGHT: ("RT", "RT"),
+            pygame.K_PAGEUP: ("SUP", "SUP"),
+            pygame.K_PAGEDOWN: ("SDN", "SDN"),
+        }
+        self.key_pressed = ""
+        self.key_pressed_interval = 10
+        self.key_pressed_counter = 0
 
         self.clock = pygame.time.Clock()
         self.key = ""
         self.running = True
 
     def quit(self):
+        self.s.close()
         self.work_thread.stop()
         self.running = False
 
@@ -85,22 +157,36 @@ class UserInterface(object):
                 self.quit()
                 break
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    self.quit()
-                elif event.key == pygame.K_RETURN:
-                    self.key = "\n"
-                    print("enter")
-                elif event.key == pygame.K_LEFT:
-                    pass
-                elif event.key == pygame.K_RIGHT:
-                    pass
-                elif event.key == pygame.K_UP:
-                    pass
-                elif event.key == pygame.K_DOWN:
-                    pass
-                elif event.key == pygame.K_f:
-                    self.key = "f"
-                    pass
+                if event.key in self.keys:
+                    self.key = self.keys[event.key][0]
+                    if event.mod & pygame.KMOD_CAPS:
+                        self.key = self.keys[event.key][1]
+                    elif event.mod & pygame.KMOD_SHIFT:
+                        self.key = self.keys[event.key][1]
+                    self.s.sendall(self.key.encode())
+                    self.input += self.key
+                    if len(self.input) >= self.input_max_length:
+                        self.input = self.input[-self.input_max_length:]
+                    print(self.key)
+                # if event.key == pygame.K_ESCAPE:
+                #     self.quit()
+                # elif event.key == pygame.K_RETURN:
+                #     self.key = "\n"
+                #     print("enter")
+                # elif event.key == pygame.K_LEFT:
+                #     pass
+                # elif event.key == pygame.K_RIGHT:
+                #     pass
+                # elif event.key == pygame.K_UP:
+                #     pass
+                # elif event.key == pygame.K_DOWN:
+                #     pass
+                # elif event.key == pygame.K_f:
+                #     self.key = "f"
+                #     if event.mod & pygame.KMOD_CAPS:
+                #         self.key = "F"
+                #     if event.mod & pygame.KMOD_SHIFT:
+                #         self.key = "F"
 
     def render(self):
         red = (180, 53, 53)
@@ -109,9 +195,9 @@ class UserInterface(object):
         offset_x = 0
         offset_y = 0
         self.window.fill((180, 180, 180))
-        key = self.font_command.render(self.key, True, (0, 0, 0))
-        x = (512 - key.get_width()) // 2
-        self.window.blit(key, (offset_x + x, offset_y + 20))
+        input_cache = self.font_command.render(self.input, True, (0, 0, 0))
+        x = (512 - input_cache.get_width()) // 2
+        self.window.blit(input_cache, (offset_x + x, offset_y + 20))
         pygame.display.update()
 
     def run(self):
@@ -131,7 +217,7 @@ if __name__ == "__main__":
                           backup_count = 5,
                           console = True)
     LOG.info("start")
-    host = "192.164.4.28"
+    host = "192.168.4.28"
     port = 8888
     if len(sys.argv) > 1:
         host = sys.argv[1]
@@ -139,7 +225,7 @@ if __name__ == "__main__":
         port = host = sys.argv[2]
     worker = WorkThread(TaskQueue, ResultQueue)
     worker.start()
-    UserInterface = UserInterface(worker, TaskQueue, ResultQueue)
+    UserInterface = UserInterface(host, port, worker, TaskQueue, ResultQueue)
     UserInterface.run()
     worker.join()
     pygame.quit()
