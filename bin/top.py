@@ -29,8 +29,17 @@ def main(*args, **kwargs):
                 voltage, P, plugged_in = ups.read_power_status()
                 monitor_msg = " CPU%s:%3d%% RAM:%3d%% PM[%s]: %4.2fV %2dC %3d%%" % (shell.scheduler.cpu, int(100 - shell.scheduler.idle), int(100 - (shell.scheduler.mem_free() * 100 / (264 * 1024))), "C" if plugged_in else "B", voltage, temp, P)
                 frame.append(monitor_msg)
+                frame.append("-" * 42)
+                frame.append("% 3s  % 6s %30s" % ("PID", " CPU%", "Name"))
+                tasks = []
+                tasks.append((0, shell.scheduler.cpu_usage, "system"))
+                if shell.scheduler.current is not None:
+                    tasks.append((shell.scheduler.current.id, shell.scheduler.current.cpu_usage, shell.scheduler.current.name))
                 for i, t in enumerate(shell.scheduler.tasks):
-                    frame.append("%03d %38s"  % (t.id, t.name))
+                    tasks.append((t.id, t.cpu_usage, t.name))
+                tasks.sort(key = lambda x: x[1], reverse = True)
+                for t in tasks:
+                    frame.append("%03d % 6.2f%% %30s"  % t)
                 for i in range(0, height - len(frame)):
                     frame.append("")
                 yield Condition.get().load(sleep = 1000, wait_msg = False, send_msgs = [
