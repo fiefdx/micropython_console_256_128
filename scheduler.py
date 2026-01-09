@@ -1,9 +1,8 @@
 import gc
 import sys
 from io import StringIO
+from time import ticks_ms, ticks_us, ticks_add, ticks_diff, sleep_ms, sleep_us
 from micropython import const
-
-from common import ticks_ms, ticks_add, ticks_diff, sleep_ms
 
 
 class Message(object):
@@ -137,6 +136,8 @@ class Task(object):
         self.condition = condition
         self.need_to_clean = need_to_clean
         self.processed = processed
+        self.cpu_time_ms = 0
+        self.cpu_usage = 0
         return self
         
     def set_condition(self, condition):
@@ -195,10 +196,12 @@ class Scheluder(object):
         self.task_sort_at = 0
         self.current = None
         self.sleep_ms = 0
-        self.load_calc_at = ticks_ms()
+        self.load_calc_at = ticks_us()
+        self.cpu_time_ms = 0
+        self.cpu_usage = 0
         self.idle = 0
-        self.idle_sleep_interval = const(0.1)
-        self.task_sleep_interval = const(0.1)
+        self.idle_sleep_interval = const(100)
+        self.task_sleep_interval = const(100)
         self.need_to_sort = True
         self.stop = False
         
@@ -254,26 +257,39 @@ class Scheluder(object):
     def run(self):
         while not self.stop:
             try:
-                load_interval = ticks_diff(ticks_ms(), self.load_calc_at)
-                if load_interval >= 1000:
+                load_interval = ticks_diff(ticks_us(), self.load_calc_at)
+                if load_interval >= 1000000:
+                    load_interval /= 1000
                     self.idle = self.sleep_ms * 100 / load_interval
                     if self.idle > 100:
                         self.idle = 100
+                    tasks_cpu_time_ms = 0
+                    for t in self.tasks:
+                        tasks_cpu_time_ms += t.cpu_time_ms
+                        t.cpu_usage = t.cpu_time_ms * 100 / load_interval
+                        t.cpu_time_ms = 0
+                    self.cpu_time_ms = load_interval - tasks_cpu_time_ms - self.sleep_ms
+                    self.cpu_usage = self.cpu_time_ms * 100 / load_interval
+                    self.cpu_time_ms = 0
                     self.sleep_ms = 0
-                    self.load_calc_at = ticks_ms()
+                    self.load_calc_at = ticks_us()
                 if self.tasks:
                     #print(self.tasks)
+#                     s = ticks_us()
                     if self.need_to_sort == True:
                         self.task_sort_at = ticks_ms()
                         self.tasks.sort(key = self.task_sort)
                         self.need_to_sort = False
+#                         self.cpu_time_ms += ticks_diff(ticks_us(), s) / 1000
                     if self.current is None:
                         peek = self.tasks[0]
-                        now = ticks_ms()
+#                         s = ticks_us()
                         if peek.ready():
                             # print("ready: %s" % peek.id)
                             self.current = self.tasks.pop(0)
                             try:
+                                task_start_at = ticks_us()
+#                                 self.cpu_time_ms += ticks_diff(task_start_at, s) / 1000
                                 self.current.set_condition(next(self.current.func))
                                 self.tasks.append(self.current)
                                 for msg in self.current.condition.send_msgs:
@@ -281,9 +297,11 @@ class Scheluder(object):
                                     msg.sender_name = self.current.name
                                     if msg.receiver in self.tasks_ids:
                                         self.tasks_ids[msg.receiver].put_message(msg)
+                                self.current.cpu_time_ms = ticks_diff(ticks_us(), task_start_at) / 1000
                                 self.current = None
                                 self.need_to_sort = True
                             except StopIteration:
+#                                 s = ticks_us()
                                 self.remove_task(self.current)
                                 for m in self.current.need_to_clean:
                                     try:
@@ -300,24 +318,29 @@ class Scheluder(object):
                                 self.current.clean()
                                 # del self.current
                                 self.current = None
+#                                 self.cpu_time_ms += ticks_diff(ticks_us(), s) / 1000
                             except TypeError:
+#                                 s = ticks_us()
                                 if self.current:
                                     self.current.clean()
                                     # del self.current
                                 self.current = None
+#                                 self.cpu_time_ms += ticks_diff(ticks_us(), s) / 1000
                             except Exception as e:
+#                                 s = ticks_us()
                                 h = "task: %s\n" % self.current.name
                                 self.log(h, e)
                                 if self.current:
                                     self.current.clean()
                                     # del self.current
                                 self.current = None
+#                                 self.cpu_time_ms += ticks_diff(ticks_us(), s) / 1000
                         else:
-                            sleep_ms(self.task_sleep_interval)
-                            self.sleep_ms += self.task_sleep_interval
+                            sleep_us(self.task_sleep_interval)
+                            self.sleep_ms += self.task_sleep_interval / 1000
                 else:
-                    sleep_ms(self.idle_sleep_interval)
-                    self.sleep_ms += self.idle_sleep_interval
+                    sleep_us(self.idle_sleep_interval)
+                    self.sleep_ms += self.idle_sleep_interval / 1000
             except KeyboardInterrupt as e:
                 h = "scheduler exit: "
                 self.log(h, e)
