@@ -46,7 +46,7 @@ class KeyBoard(object):
         self.mode = "DF" # default
         self.button = ""
         self.continue_press_counter = 0
-        self.continue_press_interval = const(9)
+        self.continue_press_interval = const(2)
         self.update_light_level()
         self.scan_rows = 5
         self.game_mode = False
