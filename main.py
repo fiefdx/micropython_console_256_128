@@ -40,7 +40,7 @@ sys.path.insert(0, "/bin")
 sys.path.append("/")
 
 if machine:
-    machine.freq(240000000)
+    machine.freq(240000000, 240000000)
     print("freq: %s mhz" % (machine.freq() / 1000000))
 if microcontroller:
     microcontroller.cpu.frequency = 240000000
@@ -72,7 +72,7 @@ def monitor(task, name, scheduler = None, display_id = None):
         yield Condition.get().load(
             sleep = 1000,
             send_msgs = [Message.get().load(
-                {"stats": (scheduler.cpu, int(100 - scheduler.idle), 100.0 - (ram_free * 100 / (264 * 1024)), ram_free, ram_used, size, free, used)},
+                {"stats": (scheduler.cpu, int(100 - scheduler.idle), 100.0 - (ram_free * 100 / (ram_free + ram_used)), ram_free, ram_used, size, free, used)},
                 receiver = scheduler.shell_id
             )]
         )
@@ -171,7 +171,7 @@ def render(category, msg, wri, tile_wri, lcd, refresh):
 def display(task, name, scheduler = None, display_cs = None, sd_cs = None, spi = None):
     sd_cs.high()
     # spi.init(baudrate=50000000, polarity=1, phase=1)
-    spi.init(baudrate=62500000, polarity=1, phase=1)
+    spi.init(baudrate=24000000, polarity=1, phase=1)
     lcd = ST75256(256, 128, spi, Pin(1), Pin(6), display_cs, rot=0)
     contrast = 0x138
     contrast_max = const(0x150)
@@ -223,7 +223,8 @@ def display(task, name, scheduler = None, display_cs = None, sd_cs = None, spi =
         while True:
             try:
                 sd_cs.high()
-                spi.init(baudrate=62500000, polarity=1, phase=1)
+                spi.init(baudrate=24000000, polarity=1, phase=1)
+                #print("spi.freq: ", spi)
                 #spi.init(baudrate=1000000, polarity=1, phase=1)
                 # time.sleep_ms(1)
                 refresh = False
@@ -393,11 +394,11 @@ def display(task, name, scheduler = None, display_cs = None, sd_cs = None, spi =
             
 def storage(task, name, scheduler = None, display_cs = None, sd_cs = None, spi = None):
     display_cs.high() # disable display
-    spi.init(baudrate=13200000, polarity=0, phase=0)
+    spi.init(baudrate=20000000, polarity=0, phase=0)
     sd = None
     vfs = None
     try:
-        sd = sdcard.SDCard(spi, sd_cs, baudrate=13200000)
+        sd = sdcard.SDCard(spi, sd_cs, baudrate=20000000)
         vfs = uos.VfsFat(sd)
         uos.mount(vfs, "/sd")
     except Exception as e:
@@ -407,7 +408,7 @@ def storage(task, name, scheduler = None, display_cs = None, sd_cs = None, spi =
         msg = task.get_message()
         try:
             display_cs.high() # disable display
-            spi.init(baudrate=13200000, polarity=0, phase=0)
+            spi.init(baudrate=20000000, polarity=0, phase=0)
             sd_cs.low()
             if "cmd" in msg.content:
                 cmd = msg.content["cmd"]
@@ -561,7 +562,7 @@ def keyboard_input(task, name, scheduler = None, interval = 50, shell_id = None,
                 if volume > 0:
                     yield Condition.get().load(sleep = 0, send_msgs = [Message.get().load({"freq": key_sound, "volume": k.get_volume(), "length": 5}, receiver = scheduler.sound_id)])
                 yield Condition.get().load(sleep = 0, send_msgs = [Message.get().load({"contrast": key}, receiver = display_id)])
-            elif key in ("light-up", "light-down", "volume-up", "volume-down", "SH", "CP"):
+            elif key in {"light-up", "light-down", "volume-up", "volume-down", "SH", "CP"}:
                 if volume > 0:
                     yield Condition.get().load(sleep = 0, send_msgs = [Message.get().load({"freq": key_sound, "volume": k.get_volume(), "length": 5}, receiver = scheduler.sound_id)])
             elif key != "" or len(keys):
@@ -656,13 +657,13 @@ if __name__ == "__main__":
         shell_id = s.add_task(Task.get().load(shell, "shell", condition = Condition.get(), kwargs = {"scheduler": s, "display_id": display_id, "storage_id": storage_id}))
         s.shell_id = shell_id
         s.set_log_to(shell_id)
-        keyboard_id = s.add_task(Task.get().load(keyboard_input, "keyboard_input", condition = Condition.get(), kwargs = {"scheduler": s, "interval": 10, "shell_id": shell_id, "display_id": display_id}))
+        keyboard_id = s.add_task(Task.get().load(keyboard_input, "keyboard_input", condition = Condition.get(), kwargs = {"scheduler": s, "interval": 25, "shell_id": shell_id, "display_id": display_id}))
         #display_id = None
         monitor_id = s.add_task(Task.get().load(monitor, "monitor", condition = Condition.get(), kwargs = {"scheduler": s, "display_id": display_id}))
         #counter_id = s.add_task(Task(counter, "counter", kwargs = {"interval": 10, "display_id": display_id}))
         #backlight_id = s.add_task(Task(display_backlight, "display_backlight", kwargs = {"interval": 500, "display_id": display_id}))
         #keyboard_id = s.add_task(Task(test_keyboard, "test_keyboard", kwargs = {"interval": 50, "display_id": display_id}))
-        remote_id = s.add_task(Task.get().load(remote_input, "remote_input", condition = Condition.get(), kwargs = {"scheduler": s, "interval": 10, "shell_id": shell_id, "display_id": display_id}))
+        #remote_id = s.add_task(Task.get().load(remote_input, "remote_input", condition = Condition.get(), kwargs = {"scheduler": s, "interval": 10, "shell_id": shell_id, "display_id": display_id}))
         # led.on()
         led.off()
         s.run()
