@@ -100,7 +100,7 @@ class KeyBoard(object):
                     if self.y_lines[y].value() == False: # pressd
                         if self.press_buttons[y][x]: # already pressed
                             if key in self.game_press_counters:
-                                if self.game_press_counters[key] % 6 == 0:
+                                if self.game_press_counters[key] % 2 == 0:
                                     self.buttons.append(key)
                                 self.game_press_counters[key] += 1
                         else:
