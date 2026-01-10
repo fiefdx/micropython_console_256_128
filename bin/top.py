@@ -24,10 +24,12 @@ def main(*args, **kwargs):
             try:
                 frame = []
                 gc.collect()
+                ram_free = gc.mem_free()
+                ram_used = gc.mem_alloc()
                 frame.append("         %s" % ups.read_time())
                 temp = ups.read_temp()
                 voltage, P, plugged_in = ups.read_power_status()
-                monitor_msg = " CPU%s:%3d%% RAM:%3d%% PM[%s]: %4.2fV %2dC %3d%%" % (shell.scheduler.cpu, int(100 - shell.scheduler.idle), int(100 - (shell.scheduler.mem_free() * 100 / (264 * 1024))), "C" if plugged_in else "B", voltage, temp, P)
+                monitor_msg = " CPU%s:%3d%% RAM:%3d%% PM[%s]: %4.2fV %2dC %3d%%" % (shell.scheduler.cpu, int(100 - shell.scheduler.idle), int(100 - (ram_free * 100 / (ram_free + ram_used))), "C" if plugged_in else "D", voltage, temp, P)
                 frame.append(monitor_msg)
                 frame.append("-" * 42)
                 frame.append("% 3s  % 6s %30s" % ("PID", " CPU%", "Name"))
