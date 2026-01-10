@@ -135,6 +135,10 @@ class EditShell(object):
                 self.paste()
             elif c == "Ctrl-G":
                 self.generate_with_chat()
+            elif c == "Ctrl-/":
+                if self.comment_one_line():
+                    self.status = "changed"
+                    self.exit_count = 0
             elif c == "ES":
                 if self.status == "saved":
                     self.exit = True
@@ -428,6 +432,28 @@ class EditShell(object):
                 self.cache.insert(self.cursor_row + 1, "fail reason: %s" % content.decode())
         except Exception as e:
             self.cache.insert(self.cursor_row + 1, str(e))
+            
+    def comment_one_line(self, cursor_row = None):
+        result = False
+        if cursor_row is None:
+            cursor_row = self.cursor_row
+        line = self.cache[cursor_row]
+        if line != "":
+            for n, c in enumerate(line):
+                if c == " ":
+                    continue
+                if c == "#":
+                    d = 1
+                    if len(line) - 1 > n and line[n + 1] == " ":
+                        d += 1
+                    self.cache[cursor_row] = self.cache[cursor_row][:n] + self.cache[cursor_row][n+d:]
+                    result = True
+                    break
+                else:
+                    self.cache[cursor_row] = self.cache[cursor_row][:n] + "# " + self.cache[cursor_row][n:]
+                    result = True
+                    break
+        return result
 
     def cursor_move_up(self):
         self.cursor_row -= 1
@@ -448,8 +474,8 @@ class EditShell(object):
             self.cursor_col = len(self.cache[self.cursor_row]) - self.offset_col
             
     def page_up(self):
-        self.display_offset_row -= self.cache_size
-        self.cursor_row -= self.cache_size
+        self.display_offset_row -= self.cache_size // 4
+        self.cursor_row -= self.cache_size // 4
         if self.display_offset_row < 0:
             self.display_offset_row = 0
         if self.cursor_row < 0:
@@ -458,8 +484,8 @@ class EditShell(object):
             self.cursor_col = len(self.cache[self.cursor_row]) - self.offset_col
     
     def page_down(self):
-        self.display_offset_row += self.cache_size
-        self.cursor_row += self.cache_size
+        self.display_offset_row += self.cache_size // 4
+        self.cursor_row += self.cache_size // 4
         if self.cursor_row >= len(self.cache):
             self.cursor_row = len(self.cache) - 1
         if self.display_offset_row > len(self.cache) - self.cache_size:
@@ -504,14 +530,21 @@ class EditShell(object):
                 self.offset_col = 0
         if self.cursor_row > self.display_offset_row + self.cache_size - 1:
             self.display_offset_row += 1
-            
+        
     def page_left(self):
         if self.offset_col > 0:
             self.offset_col -= self.display_width // 4
-            self.cursor_col += self.display_width // 4
+            # self.cursor_col += self.display_width // 4
             if self.offset_col < 0:
                 self.offset_col = 0
-            self.cache_to_frame()
+            if len(self.cache[self.cursor_row]) < self.offset_col:
+                self.cursor_col = len(self.cache[self.cursor_row]) - self.offset_col
+            else:
+                if len(self.cache[self.cursor_row]) < self.cursor_col + self.offset_col:
+                    self.cursor_col = len(self.cache[self.cursor_row]) - self.offset_col
+                if self.cursor_col < 0:
+                    self.cursor_col = 0
+#             self.cache_to_frame()
         elif self.offset_col == 0:
             self.cursor_col = 0
     
@@ -519,7 +552,7 @@ class EditShell(object):
         self.offset_col += self.display_width // 4
         if len(self.cache[self.cursor_row]) < self.cursor_col + self.offset_col:
             self.cursor_col = len(self.cache[self.cursor_row]) - self.offset_col
-        self.cache_to_frame()
+#         self.cache_to_frame()
 
     def undo(self):
         if len(self.edit_history) > 0:
