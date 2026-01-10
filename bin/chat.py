@@ -3,6 +3,7 @@ import sys
 import time
 from math import ceil
 from io import StringIO
+from micropython import const
 
 from shell import Shell
 from scheduler import Condition, Message
@@ -38,7 +39,7 @@ class ChatShell(Shell):
         self.exit = False
         self.current_shell = None
         self.enable_cursor = True
-        self.history_file_path = history_file_path
+        self.history_file_path = const("/sd/.chat_history") if exists("/sd") else const("/.chat_history")
         self.stats = ""
         self.loading = True
         self.chat = Chat(host = host, port = port, model = model, stream = stream)
