@@ -21,9 +21,9 @@ class EditShell(object):
         self.display_height = display_size[1]
         self.offset_col = 0
         self.cache_size = cache_size
-        self.cache = [] if ram else ListFile("/.edit_cache.json", shrink_threshold = 1024000) # []
-        self.edit_history = [] if ram else ListFile("/.edit_history_cache.json", shrink_threshold = 1024000) # []
-        self.edit_redo_cache = [] if ram else ListFile("/.edit_redo_cache.json", shrink_threshold = 1024000) # []
+        self.cache = [] if ram else ListFile("/sd/.edit_cache.json" if exists("/sd") else "/.edit_cache.json", shrink_threshold = 1024000) # []
+        self.edit_history = [] if ram else ListFile("/sd/.edit_history_cache.json" if exists("/sd") else "/.edit_history_cache.json", shrink_threshold = 1024000) # []
+        self.edit_redo_cache = [] if ram else ListFile("/sd/.edit_redo_cache.json" if exists("/sd") else "/.edit_redo_cache.json", shrink_threshold = 1024000) # []
         self.edit_history_max_length = 1000
         self.edit_last_line = None
         self.cursor_color = 1
