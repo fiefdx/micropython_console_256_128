@@ -135,6 +135,9 @@ class EditShell(object):
                 self.paste()
             elif c == "Ctrl-G":
                 self.generate_with_chat()
+            elif c == "Ctrl-J":
+                self.mode = "goto"
+                self.goto_str = ""
             elif c == "Ctrl-/":
                 if self.comment_one_line():
                     self.status = "changed"
@@ -179,6 +182,20 @@ class EditShell(object):
                 self.copy_into_clipboard(cut = True)
             elif c == "Ctrl-/":
                 self.comment_select_lines()
+            elif c == "ES":
+                self.previous_mode = self.mode
+                self.mode = "edit"
+        elif self.mode == "goto":
+            if c.isdigit():
+                self.goto_str += c
+            elif c == "\b":
+                if len(self.goto_str) > 0:
+                    self.goto_str = self.goto_str[:-1]
+            elif c == "\n":
+                self.previous_mode = self.mode
+                self.mode = "edit"
+                if len(self.goto_str) > 0:
+                    self.goto(int(self.goto_str))
             elif c == "ES":
                 self.previous_mode = self.mode
                 self.mode = "edit"
@@ -496,6 +513,22 @@ class EditShell(object):
                 self.cache.insert(self.cursor_row + 1, "fail reason: %s" % content.decode())
         except Exception as e:
             self.cache.insert(self.cursor_row + 1, str(e))
+            
+    def goto(self, line_num):
+        line_num -= 1
+        last_line_num = len(self.cache) - 1
+        if line_num < 0:
+            line_num = 0
+        if line_num > last_line_num:
+            line_num = last_line_num
+        self.cursor_col = 0
+        self.cursor_row = line_num
+        self.offset_col = 0
+        self.display_offset_row = line_num - self.cache_size + 1
+        if self.display_offset_row < 0:
+            self.display_offset_row = 0
+        if self.display_offset_row > len(self.cache) - self.cache_size:
+            self.display_offset_row = len(self.cache) - self.cache_size
             
     def comment_one_line(self, cursor_row = None):
         result = False
