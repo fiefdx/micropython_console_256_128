@@ -35,7 +35,7 @@ class Shell(object):
         self.disable_output = False
         self.current_shell = None
         self.enable_cursor = True
-        self.history_file_path = const(history_file_path)
+        self.history_file_path = const("/sd/.history") if exists("/sd") else const("/.history")
         self.bin_path = const(bin_path)
         self.stats = ""
         self.loading = True
