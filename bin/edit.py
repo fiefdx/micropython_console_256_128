@@ -177,6 +177,8 @@ class EditShell(object):
                 self.previous_mode = self.mode
                 self.mode = "edit"
                 self.copy_into_clipboard(cut = True)
+            elif c == "Ctrl-/":
+                self.comment_select_lines()
             elif c == "ES":
                 self.previous_mode = self.mode
                 self.mode = "edit"
@@ -404,6 +406,68 @@ class EditShell(object):
                 line.append(self.cr2xy(select_end_col - self.offset_col, select_end_row - display_start))
                 lines.append(line)
         return lines
+    
+    def comment_select_lines(self):
+        result = False
+        display_start = self.display_offset_row
+        display_end = self.display_offset_row + self.cache_size
+        select_start_col = self.select_start_col
+        select_start_row = self.select_start_row
+        select_end_col = self.cursor_col + self.offset_col
+        select_end_row = self.cursor_row
+        if select_start_row > select_end_row or (select_start_row == select_end_row and select_start_col > select_end_col):
+            select_end_col = self.select_start_col
+            select_end_row = self.select_start_row
+            select_start_col = self.cursor_col + self.offset_col
+            select_start_row = self.cursor_row
+        if select_start_row == select_end_row:
+            if select_start_col != select_end_col:
+                result = self.comment_one_line(select_start_row)
+        else:
+            uncomments = 0
+            comments = 0
+            less_indent = None
+            for row in range(select_start_row, select_end_row + 1):
+                line = self.cache[row]
+                if line != "":
+                    for n, c in enumerate(line):
+                        if c == " ":
+                            continue
+                        if c == "#":
+                            if less_indent is None:
+                                less_indent = n
+                            else:
+                                if n < less_indent:
+                                    less_indent = n
+                            comments += 1
+                            break
+                        else:
+                            if less_indent is None:
+                                less_indent = n
+                            else:
+                                if n < less_indent:
+                                    less_indent = n
+                            uncomments += 1
+                            break
+            for row in range(select_start_row, select_end_row + 1):
+                line = self.cache[row]
+                if line != "":
+                    for n, c in enumerate(line):
+                        if uncomments > 0: # need to do comments
+                            self.cache[row] = self.cache[row][:less_indent] + "# " + self.cache[row][less_indent:]
+                            result = True
+                            break
+                        else: # need to do uncomments
+                            if c == " ":
+                                continue
+                            if c == "#":
+                                d = 1
+                                if len(line) - 1 > n and line[n + 1] == " ":
+                                    d += 1
+                                self.cache[row] = self.cache[row][:n] + self.cache[row][n+d:]
+                                result = True
+                                break
+        return result
             
     def generate_with_chat(self):
         question = self.cache[self.cursor_row]
