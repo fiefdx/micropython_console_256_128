@@ -253,12 +253,12 @@ if __name__ == "__main__":
                           backup_count = 5,
                           console = True)
     LOG.info("start")
-    host = "192.168.4.28"
+    host = "192.168.4.41"
     port = 8888
     if len(sys.argv) > 1:
         host = sys.argv[1]
     if len(sys.argv) > 2:
-        port = host = sys.argv[2]
+        port = int(sys.argv[2])
     worker = WorkThread(TaskQueue, ResultQueue)
     worker.start()
     UserInterface = UserInterface(host, port, worker, TaskQueue, ResultQueue)
