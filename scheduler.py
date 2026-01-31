@@ -16,36 +16,49 @@ class Message(object):
     @classmethod
     def get(cls):
         for m in cls.pool:
-            if m.processed:
+            if m.processed and m.replied:
                 m.processed = False
+                m.replied = False
                 return m
+
+    @classmethod
+    def need_to_reply(cls):
+        for m in cls.pool:
+            if m.processed and not m.replied:
+                yield m
             
     @classmethod
     def remain(cls):
-        n = 0
-        for m in cls.pool:
-            if m.processed:
-                n += 1
-        return n
+        return sum(1 for m in cls.pool if m.processed)
 
-    def __init__(self, content, sender = None, sender_name = "", receiver = None, processed = False):
-        self.load(content, sender, sender_name, receiver, processed)
+    def __init__(self, content, sender = None, sender_name = "", receiver = None, processed = False, drop_size = 0, need_reply = False):
+        self.load(content, sender, sender_name, receiver, processed, drop_size, need_reply)
 
-    def load(self, content, sender = None, sender_name = "", receiver = None, processed = False):
+    def load(self, content, sender = None, sender_name = "", receiver = None, processed = False, drop_size = 0, need_reply = False):
         self.content = content
         self.sender = sender
         self.sender_name = sender_name
         self.receiver = receiver
         self.processed = processed
+        self.drop_size = drop_size
+        self.need_reply = need_reply
+        self.replied = True
         return self
 
     def release(self):
-        del self.content
-        self.content = ""
-        self.sender = None
-        del self.sender_name
-        self.sender_name = ""
-        self.receiver = None
+        if self.need_reply:
+            self.sender, self.receiver = self.receiver, self.sender
+            self.content = self.sender_name
+            self.need_reply = False
+            self.replied = False
+        else:
+            # del self.content
+            self.content = ""
+            self.sender = None
+            # del self.sender_name
+            self.sender_name = ""
+            self.receiver = None
+            self.replied = True
         self.processed = True
 
 
@@ -61,26 +74,24 @@ class Condition(object):
     def get(cls):
         for c in cls.pool:
             if c.processed:
-                c.resume_at = ticks_add(ticks_ms(), 0)
+                c.resume_at = ticks_ms()
                 c.wait_msg = False
+                c.send_msgs.clear()
                 c.processed = False
                 return c
+        return None
             
     @classmethod
     def remain(cls):
-        n = 0
-        for c in cls.pool:
-            if c.processed:
-                n += 1
-        return n
+        return sum(1 for c in cls.pool if c.processed)
     
-    def __init__(self, code = 0, sleep = 0, send_msgs = [], wait_msg = False, processed = False):
+    def __init__(self, code = 0, sleep = 0, send_msgs = None, wait_msg = False, processed = False):
         self.load(code, sleep, send_msgs, wait_msg, processed)
         
-    def load(self, code = 0, sleep = 0, send_msgs = [], wait_msg = False, processed = False):
+    def load(self, code = 0, sleep = 0, send_msgs = None, wait_msg = False, processed = False):
         self.code = code
         self.resume_at = ticks_add(ticks_ms(), sleep) # ms
-        self.send_msgs = send_msgs
+        self.send_msgs = send_msgs if send_msgs is not None else []
         self.wait_msg = wait_msg
         self.processed = processed
         return self
@@ -88,8 +99,10 @@ class Condition(object):
     def release(self):
         self.code = 0
         self.resume_at = 0
-        del self.send_msgs
-        self.send_msgs = []
+        self.send_msgs.clear()
+        # del self.send_msgs
+        # self.send_msgs = []
+        self.wait_msg = False
         self.processed = True
         
         
@@ -99,7 +112,7 @@ class Task(object):
 
     @classmethod
     def init_pool(cls, size = 100):
-        for i in range(size):
+        for _ in range(size):
             cls.pool.append(Task(None, "", processed = True))
 
     @classmethod
@@ -108,33 +121,32 @@ class Task(object):
             if t.processed:
                 t.processed = False
                 return t
+        return None
             
     @classmethod
     def remain(cls):
-        n = 0
-        for t in cls.pool:
-            if t.processed:
-                n += 1
-        return n
+        return sum(1 for t in cls.pool if t.processed)
     
     @classmethod
     def new_id(cls):
         cls.id_count += 1
         return cls.id_count
     
-    def __init__(self, func, name, condition = None, task_id = None, args = [], kwargs = {}, need_to_clean = [], processed = False):
-        self.load(func, name, condition, task_id, args, kwargs, need_to_clean, processed)
+    def __init__(self, func, name, condition = None, task_id = None, args = None, kwargs = None, need_to_clean = None, reset_sys_path = False, processed = False):
+        self.load(func, name, condition, task_id, args, kwargs, need_to_clean, reset_sys_path, processed)
 
-    def load(self, func, name, condition = Condition(), task_id = None, args = [], kwargs = {}, need_to_clean = [], processed = False):
-        self.id = Task.new_id()
-        if task_id:
-            self.id = task_id
+    def load(self, func, name, condition = None, task_id = None, args = None, kwargs = None, need_to_clean = None, reset_sys_path = False, processed = False):
+        args = args if args else ()
+        kwargs = kwargs if kwargs else {}
+        need_to_clean = need_to_clean if need_to_clean else []
+        self.id = task_id or Task.new_id()
         self.name = name
         self.msgs = []
         self.msgs_senders = []
         self.func = func(self, name, *args, **kwargs) if func else None
-        self.condition = condition
+        self.condition = condition if condition else Condition()
         self.need_to_clean = need_to_clean
+        self.reset_sys_path = reset_sys_path
         self.processed = processed
         self.cpu_time_ms = 0
         self.cpu_usage = 0
@@ -145,28 +157,34 @@ class Task(object):
         self.condition = condition
         
     def put_message(self, message):
-        self.msgs.append(message)
-        self.msgs_senders.append(message.sender)
+        if message.drop_size == 0:
+            self.msgs.append(message)
+            self.msgs_senders.append(message.sender)
+        elif len(self.msgs) < message.drop_size:
+            self.msgs.append(message)
+            self.msgs_senders.append(message.sender)
+        else:
+            # print("drop message:", message.content)
+            message.release()
         
     def get_message(self, sender = None):
-        msg = None
-        if len(self.msgs) > 0:
-            if sender is None:
-                msg = self.msgs.pop(0)
-                _ = self.msgs_senders.pop(0)
-            else:
-                try:
-                    i = self.msgs_senders.index(sender)
-                    msg = self.msgs.pop(i)
-                    _ = self.msgs_senders.pop(i)
-                except:
-                    pass
-        return msg
+        if not self.msgs:
+            return None
+        if sender is None:
+            _ = self.msgs_senders.pop(0)
+            return self.msgs.pop(0)
+            
+        try:
+            i = self.msgs_senders.index(sender)
+            _ = self.msgs_senders.pop(i)
+            return self.msgs.pop(i)
+        except:
+            return None
         
     def ready(self):
         if ticks_diff(ticks_ms(), self.condition.resume_at) >= 0:
             if self.condition.wait_msg is True:
-                return len(self.msgs) > 0
+                return bool(self.msgs)
             elif self.condition.wait_msg >= 1:
                 return self.condition.wait_msg in self.msgs_senders
             else:
@@ -178,11 +196,17 @@ class Task(object):
         del self.name
         for m in self.msgs:
             m.release()
-        del self.msgs_senders
-        del self.func
+        self.msgs.clear()
+        self.msgs_senders.clear()
+        # del self.msgs_senders
+        # del self.func
+        self.func = None
         if self.condition:
             self.condition.release()
-        del self.need_to_clean
+        self.condition = None
+        self.need_to_clean.clear()
+        # del self.need_to_clean
+        self.reset_sys_path = False
         self.processed = True
 
 
@@ -207,15 +231,13 @@ class Scheluder(object):
         
     def task_sort(self, task):
         if task.condition.wait_msg:
-            if len(task.msgs) > 0:
-                return -1000000
-            else:
-                return 1000000
+            return -1000000 if len(task.msgs) > 0 else 1000000
         return ticks_diff(task.condition.resume_at, self.task_sort_at)
 
     def add_task(self, task):
         self.tasks.append(task)
         self.tasks_ids[task.id] = task
+        self.need_to_sort = True
         return task.id
 
     def remove_task(self, task):
@@ -227,13 +249,11 @@ class Scheluder(object):
         return task_id in self.tasks_ids
     
     def get_task(self, task_id):
-        if task_id in self.tasks_ids:
-            return self.tasks_ids[task_id]
-        return None
+        return self.tasks_ids.get(task_id)
         
-    def send_msg(self, msg):
-        self.msgs.put(msg)
-        
+#     def send_msg(self, msg):
+#         self.msgs.put(msg)
+         
     def mem_free(self):
         return gc.mem_free()
     
@@ -260,15 +280,13 @@ class Scheluder(object):
                 load_interval = ticks_diff(ticks_us(), self.load_calc_at)
                 if load_interval >= 1000000:
                     load_interval /= 1000
-                    self.idle = self.sleep_ms * 100 / load_interval
-                    if self.idle > 100:
-                        self.idle = 100
+                    self.idle = min(self.sleep_ms * 100 / load_interval, 100)
                     tasks_cpu_time_ms = 0
                     for t in self.tasks:
                         tasks_cpu_time_ms += t.cpu_time_ms
                         t.cpu_usage = t.cpu_time_ms * 100 / load_interval
                         t.cpu_time_ms = 0
-                    self.cpu_time_ms = load_interval - tasks_cpu_time_ms - self.sleep_ms
+                    self.cpu_time_ms = max(load_interval - tasks_cpu_time_ms - self.sleep_ms, 0)
                     self.cpu_usage = self.cpu_time_ms * 100 / load_interval
                     self.cpu_time_ms = 0
                     self.sleep_ms = 0
@@ -276,37 +294,46 @@ class Scheluder(object):
                 if self.tasks:
                     #print(self.tasks)
 #                     s = ticks_us()
-                    if self.need_to_sort == True:
+                    if self.need_to_sort:
                         self.task_sort_at = ticks_ms()
                         self.tasks.sort(key = self.task_sort)
                         self.need_to_sort = False
 #                         self.cpu_time_ms += ticks_diff(ticks_us(), s) / 1000
-                    if self.current is None:
-                        peek = self.tasks[0]
+                    peek = self.tasks[0]
 #                         s = ticks_us()
-                        if peek.ready():
-                            # print("ready: %s" % peek.id)
-                            self.current = self.tasks.pop(0)
-                            try:
-                                task_start_at = ticks_us()
+                    if peek.ready():
+                        # print("ready: %s" % peek.id)
+                        # processing tasks
+                        self.current = self.tasks.pop(0)
+                        task_start_at = ticks_us()
+                        try:
 #                                 self.cpu_time_ms += ticks_diff(task_start_at, s) / 1000
-                                self.current.set_condition(next(self.current.func))
-                                self.tasks.append(self.current)
-                                for msg in self.current.condition.send_msgs:
-                                    msg.sender = self.current.id
-                                    msg.sender_name = self.current.name
-                                    if msg.receiver in self.tasks_ids:
-                                        self.tasks_ids[msg.receiver].put_message(msg)
-                                self.current.cpu_time_ms = ticks_diff(ticks_us(), task_start_at) / 1000
-                                self.current = None
-                                self.need_to_sort = True
-                            except StopIteration:
+                            self.current.set_condition(next(self.current.func))
+                            self.tasks.append(self.current)
+                            for msg in self.current.condition.send_msgs:
+                                msg.sender = self.current.id
+                                msg.sender_name = self.current.name
+                                if msg.receiver in self.tasks_ids:
+                                    self.tasks_ids[msg.receiver].put_message(msg)
+                            self.current.cpu_time_ms = ticks_diff(ticks_us(), task_start_at) / 1000
+                            self.current = None
+                            self.need_to_sort = True
+                        except StopIteration:
 #                                 s = ticks_us()
-                                self.remove_task(self.current)
+                            self.remove_task(self.current)
+                            cmd = self.current.name.split(" ")[0]
+                            same_cmd_tasks = 0
+                            for t in self.tasks:
+                                if t.name.startswith(cmd):
+                                    same_cmd_tasks += 1
+                            # print("remain cmd: ", cmd, same_cmd_tasks)
+                            if same_cmd_tasks == 0:
+                                # print("clean: ", self.current.need_to_clean)
                                 for m in self.current.need_to_clean:
                                     try:
                                         m_name = m.__name__
-                                        exec("del %s" % m.__name__)
+                                        # del globals()[m.__name__]
+                                        # exec("del %s" % m.__name__)
                                         # exec("del %s" % m.__name__.split(".")[-1])
                                         if hasattr(m, "main"):
                                             del m.main
@@ -315,29 +342,43 @@ class Scheluder(object):
                                     except Exception as e:
                                         h = "task: %s\n" % self.current.name
                                         self.log(h, e)
+                                if self.current.reset_sys_path:
+                                    try:
+                                        sys.path.pop(0)
+                                    except Exception as e:
+                                        h = "task: %s\n" % self.current.name
+                                        self.log(h, e)
+                            self.current.clean()
+                            # del self.current
+                            self.current = None
+#                                 self.cpu_time_ms += ticks_diff(ticks_us(), s) / 1000
+                        except TypeError:
+#                                 s = ticks_us()
+                            if self.current:
                                 self.current.clean()
                                 # del self.current
-                                self.current = None
+                            self.current = None
 #                                 self.cpu_time_ms += ticks_diff(ticks_us(), s) / 1000
-                            except TypeError:
+                        except Exception as e:
 #                                 s = ticks_us()
-                                if self.current:
-                                    self.current.clean()
-                                    # del self.current
-                                self.current = None
+                            h = "task: %s\n" % self.current.name
+                            self.log(h, e)
+                            if self.current:
+                                self.current.clean()
+                                # del self.current
+                            self.current = None
 #                                 self.cpu_time_ms += ticks_diff(ticks_us(), s) / 1000
-                            except Exception as e:
-#                                 s = ticks_us()
-                                h = "task: %s\n" % self.current.name
-                                self.log(h, e)
-                                if self.current:
-                                    self.current.clean()
-                                    # del self.current
-                                self.current = None
-#                                 self.cpu_time_ms += ticks_diff(ticks_us(), s) / 1000
-                        else:
-                            sleep_us(self.task_sleep_interval)
-                            self.sleep_ms += self.task_sleep_interval / 1000
+
+                        # processing messages
+                        for msg in Message.need_to_reply():
+                            msg.processed = False
+                            if msg.receiver in self.tasks_ids:
+                                self.tasks_ids[msg.receiver].put_message(msg)
+                            else:
+                                msg.release()
+                    else:
+                        sleep_us(self.task_sleep_interval)
+                        self.sleep_ms += self.task_sleep_interval / 1000
                 else:
                     sleep_us(self.idle_sleep_interval)
                     self.sleep_ms += self.idle_sleep_interval / 1000
